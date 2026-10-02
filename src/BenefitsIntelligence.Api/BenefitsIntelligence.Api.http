@@ -1,0 +1,6 @@
+@BenefitsIntelligence.Api_HostAddress = http://localhost:5209
+
+GET {{BenefitsIntelligence.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

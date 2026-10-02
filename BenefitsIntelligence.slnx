@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+    <File Path="CLAUDE.md" />
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path=".gitattributes" />
+    <File Path="global.json" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/BenefitsIntelligence.Api/BenefitsIntelligence.Api.csproj" />
+    <Project Path="src/BenefitsIntelligence.Domain/BenefitsIntelligence.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BenefitsIntelligence.Domain.Tests/BenefitsIntelligence.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

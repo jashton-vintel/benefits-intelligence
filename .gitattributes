@@ -1,0 +1,13 @@
+# Normalise line endings in the repository; working copies use the platform default
+* text=auto
+
+# Classic Visual Studio solution files need CRLF
+*.sln text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.snk binary
