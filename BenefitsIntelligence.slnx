@@ -5,13 +5,16 @@
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path=".gitattributes" />
+    <File Path="docker-compose.yml" />
     <File Path="global.json" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/BenefitsIntelligence.Api/BenefitsIntelligence.Api.csproj" />
+    <Project Path="src/BenefitsIntelligence.Application/BenefitsIntelligence.Application.csproj" />
     <Project Path="src/BenefitsIntelligence.Domain/BenefitsIntelligence.Domain.csproj" />
+    <Project Path="src/BenefitsIntelligence.Infrastructure/BenefitsIntelligence.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/BenefitsIntelligence.Domain.Tests/BenefitsIntelligence.Domain.Tests.csproj" />

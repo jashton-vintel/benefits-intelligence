@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\BenefitsIntelligence.Application\BenefitsIntelligence.Application.csproj" />
+  </ItemGroup>
+</Project>

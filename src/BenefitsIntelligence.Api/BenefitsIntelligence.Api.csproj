@@ -4,6 +4,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BenefitsIntelligence.Domain\BenefitsIntelligence.Domain.csproj" />
+    <ProjectReference Include="..\BenefitsIntelligence.Application\BenefitsIntelligence.Application.csproj" />
+    <ProjectReference Include="..\BenefitsIntelligence.Infrastructure\BenefitsIntelligence.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

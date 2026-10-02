@@ -483,3 +483,13 @@ $RECYCLE.BIN/
 
 # Claude Code (machine-specific)
 .claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Private planning notes and local Claude instructions
+.notes/
+CLAUDE.local.md
