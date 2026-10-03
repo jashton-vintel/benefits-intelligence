@@ -9,7 +9,7 @@ def test_reads_rabbitmq_settings_from_environment(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("RABBITMQ_PASSWORD", "secret")
     monkeypatch.setenv("RABBITMQ_PORT", "5673")
 
-    settings = load_settings()
+    settings = load_settings(env_file=None)
 
     assert settings.rabbitmq_user == "svc-user"
     assert settings.rabbitmq_password == "secret"
@@ -22,4 +22,4 @@ def test_missing_credentials_fail_validation(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.delenv("RABBITMQ_PASSWORD", raising=False)
 
     with pytest.raises(ValidationError):
-        load_settings()
+        load_settings(env_file=None)
