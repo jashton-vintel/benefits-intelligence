@@ -3,3 +3,5 @@
 GET {{BenefitsIntelligence.Api_HostAddress}}/health
 
 ###
+
+POST {{BenefitsIntelligence.Api_HostAddress}}/dev/ping
