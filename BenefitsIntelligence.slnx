@@ -19,5 +19,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/BenefitsIntelligence.Application.Tests/BenefitsIntelligence.Application.Tests.csproj" Id="fb47e07a-fca1-4c78-8cb7-6da548c0c159" />
     <Project Path="tests/BenefitsIntelligence.Domain.Tests/BenefitsIntelligence.Domain.Tests.csproj" />
+    <Project Path="tests/BenefitsIntelligence.Infrastructure.Tests/BenefitsIntelligence.Infrastructure.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -15,6 +17,16 @@ def test_reads_rabbitmq_settings_from_environment(monkeypatch: pytest.MonkeyPatc
     assert settings.rabbitmq_password == "secret"
     assert settings.rabbitmq_port == 5673
     assert settings.rabbitmq_host == "localhost"
+
+
+def test_document_root_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RABBITMQ_USER", "svc-user")
+    monkeypatch.setenv("RABBITMQ_PASSWORD", "secret")
+    monkeypatch.setenv("DOCUMENT_ROOT", "/data")
+
+    settings = load_settings(env_file=None)
+
+    assert settings.document_root == Path("/data")
 
 
 def test_missing_credentials_fail_validation(monkeypatch: pytest.MonkeyPatch) -> None:

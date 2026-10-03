@@ -1,8 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-  <PropertyGroup>  <UserSecretsId>f6eb3a1f-28bd-4cc1-b652-54b901b8b7bd</UserSecretsId>
+  <PropertyGroup>
+    <UserSecretsId>f6eb3a1f-28bd-4cc1-b652-54b901b8b7bd</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BenefitsIntelligence.Application\BenefitsIntelligence.Application.csproj" />

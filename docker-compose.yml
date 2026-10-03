@@ -33,6 +33,47 @@ services:
       retries: 10
       start_period: 20s
 
+  # Application services run only with `--profile app`, so a plain `docker compose up` gives just
+  # the infrastructure for running the API and worker from the IDE without competing consumers.
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: src/BenefitsIntelligence.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__BenefitsIntelligence: "Server=mssql,1433;Database=BenefitsIntelligence;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: ${RABBITMQ_USER}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD}
+      DocumentStorage__RootPath: /data
+      Database__MigrateOnStartup: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - documents:/data
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: src/python
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      DOCUMENT_ROOT: /data
+    volumes:
+      - documents:/data:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
 volumes:
   rabbitmq-data:
   mssql-data:
+  documents:

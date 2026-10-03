@@ -2,7 +2,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-REPO_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+# Local development defaults; containers supply every value through environment variables.
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ENV_FILE = _REPO_ROOT / ".env"
 
 
 class Settings(BaseSettings):
@@ -12,6 +14,7 @@ class Settings(BaseSettings):
     rabbitmq_port: int = 5672
     rabbitmq_user: str
     rabbitmq_password: str
+    document_root: Path = _REPO_ROOT / "data"
 
 
 def load_settings(env_file: Path | None = REPO_ENV_FILE) -> Settings:

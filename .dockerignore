@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+
+.git/
+.notes/
+.env
+CLAUDE.local.md
+data/
+
+src/python/

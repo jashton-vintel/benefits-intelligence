@@ -4,4 +4,12 @@ GET {{BenefitsIntelligence.Api_HostAddress}}/health
 
 ###
 
-POST {{BenefitsIntelligence.Api_HostAddress}}/dev/ping
+GET {{BenefitsIntelligence.Api_HostAddress}}/api/policies
+
+###
+
+@policyId = 00000000-0000-0000-0000-000000000000
+
+GET {{BenefitsIntelligence.Api_HostAddress}}/api/policies/{{policyId}}
+
+###

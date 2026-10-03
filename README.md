@@ -26,38 +26,71 @@ Dependencies point inwards: `Api → Application → Domain`, with `Infrastructu
 
 ## Getting started
 
-### 1. Infrastructure
+Copy the environment template and set real values first:
 
 ```powershell
-Copy-Item .env.example .env   # then set real values
-docker compose up -d
-docker compose ps             # wait for both services to report "healthy"
+Copy-Item .env.example .env
+```
+
+### Run everything in Docker
+
+Builds and starts the API, the processing worker, RabbitMQ and SQL Server. The database schema is created on first start.
+
+```powershell
+docker compose --profile app up --build
 ```
 
 | Service | Address |
 | --- | --- |
-| RabbitMQ (AMQP) | `localhost:5672` |
+| API reference (Scalar) | http://localhost:8080/scalar |
 | RabbitMQ management UI | http://localhost:15672 |
 | SQL Server | `localhost,1433` (login `sa`) |
 
-### 2. .NET
+The API and worker share uploaded documents through the `documents` volume, mounted at `/data` in both containers.
+
+### Develop locally
+
+`docker compose up -d` without the profile starts only RabbitMQ and SQL Server, leaving the API and worker to run from the IDE.
+
+**.NET** (connection details come from user secrets):
 
 ```powershell
-dotnet build
-dotnet test
-dotnet run --project src/BenefitsIntelligence.Api
+dotnet tool restore
+dotnet user-secrets set "ConnectionStrings:BenefitsIntelligence" "Server=localhost,1433;Database=BenefitsIntelligence;User Id=sa;Password=<MSSQL_SA_PASSWORD>;TrustServerCertificate=True" --project src/BenefitsIntelligence.Api
+dotnet user-secrets set "RabbitMq:UserName" "<RABBITMQ_USER>" --project src/BenefitsIntelligence.Api
+dotnet user-secrets set "RabbitMq:Password" "<RABBITMQ_PASSWORD>" --project src/BenefitsIntelligence.Api
+dotnet tool run dotnet-ef database update --project src/BenefitsIntelligence.Infrastructure --startup-project src/BenefitsIntelligence.Api
+dotnet run --project src/BenefitsIntelligence.Api --launch-profile http
 ```
 
-Health check: http://localhost:5209/health
+The API listens on http://localhost:5209 (Scalar at `/scalar`). Uploaded documents are written to `data/` at the repository root.
 
-### 3. Python
+**Python worker** (reads `.env` from the repository root):
 
 ```powershell
 cd src/python
 uv sync
+uv run policy-worker
+```
+
+### Tests
+
+```powershell
+dotnet test
+cd src/python
 uv run pytest
 uv run ruff check .
 ```
+
+### Trying it out
+
+Upload a PDF from Scalar (`POST /api/policies`) or with curl:
+
+```powershell
+curl.exe -X POST http://localhost:8080/api/policies -F "name=Current policy" -F "file=@CurrentHealthPolicy.pdf;type=application/pdf"
+```
+
+The response is `202 Accepted` with the policy and correlation IDs. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document.
 
 ## Conventions
 

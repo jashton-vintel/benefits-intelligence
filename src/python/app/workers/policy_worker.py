@@ -5,6 +5,7 @@ from uuid import uuid4
 from aio_pika.abc import AbstractExchange, AbstractIncomingMessage
 
 from app.config import load_settings
+from app.logging_config import configure_logging, log_context
 from app.messaging.publisher import publish_completed
 from app.messaging.rabbit_connection import connect
 from app.messaging.topology import declare_topology
@@ -23,26 +24,23 @@ def handle_process_requested(request: ProcessPolicyRequested) -> ProcessPolicyCo
 
 
 async def on_message(message: AbstractIncomingMessage, exchange: AbstractExchange) -> None:
-    try:
-        # The request is acked only after the completion is confirmed by the broker.
-        # Any exception inside the block rejects the message instead.
-        async with message.process():
-            request = ProcessPolicyRequested.model_validate_json(message.body)
-            logger.info(
-                "Processing policy %s (correlation_id=%s)",
-                request.policy_id,
-                request.correlation_id,
-            )
+    # IDs come from the AMQP properties rather than the body,
+    # so messages that fail to parse are still traceable.
+    with log_context(correlation_id=message.correlation_id, message_id=message.message_id):
+        try:
+            # The request is acked only after the completion is confirmed by the broker.
+            # Any exception inside the block rejects the message instead.
+            async with message.process():
+                request = ProcessPolicyRequested.model_validate_json(message.body)
+                logger.info("Processing policy %s", request.policy_id)
 
-            completed = handle_process_requested(request)
-            await publish_completed(exchange, completed)
+                completed = handle_process_requested(request)
+                await publish_completed(exchange, completed)
 
-            logger.info(
-                "Completed policy %s (correlation_id=%s)", request.policy_id, request.correlation_id
-            )
-    except Exception:
-        # process() has already rejected the message; keep consuming.
-        logger.exception("Failed to process message %s", message.message_id)
+                logger.info("Completed policy %s", request.policy_id)
+        except Exception:
+            # process() has already rejected the message; keep consuming.
+            logger.exception("Failed to process message")
 
 
 async def run() -> None:
@@ -59,7 +57,7 @@ async def run() -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    configure_logging()
     try:
         asyncio.run(run())
     except KeyboardInterrupt:
