@@ -50,7 +50,6 @@ describe('PolicyPage', () => {
 
     const excess = row(page, 'Annual excess');
     expect(excess.textContent).toContain('£150');
-    expect(excess.textContent).toContain('95%');
     expect(excess.textContent).toContain('Page 3');
     expect(excess.querySelector('q')?.textContent).toBe('An excess of £150 applies');
   });

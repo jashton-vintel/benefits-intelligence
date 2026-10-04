@@ -8,7 +8,6 @@
     <tr>
       <th scope="col">Field</th>
       <th scope="col">Value</th>
-      <th scope="col" class="confidence">Confidence</th>
       <th scope="col">Source</th>
     </tr>
   </thead>
@@ -25,14 +24,6 @@
               }
             </ul>
           }
-        </td>
-        <td class="confidence">
-          <span
-            class="confidence-pill"
-            [class.low]="row.assessment.reviewReasons.includes('LowConfidence')"
-          >
-            {{ row.assessment.confidence | percent }}
-          </span>
         </td>
         <td>
           @if (row.assessment.evidence; as evidence) {

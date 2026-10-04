@@ -24,7 +24,7 @@ This is a proof of concept, not a production system. It explores an architecture
 
 ![Policy queued for processing](docs/images/03-processing.png)
 
-**Extracted policy.** Every value shows the model's confidence and the page and passage it was read from. Each quote is checked against the document before it is shown.
+**Extracted policy.** Every value shows the page and passage it was read from. Each quote is checked against the document before it is shown.
 
 ![A processed policy with evidence for every fact](docs/images/04-policy-processed.png)
 
@@ -224,7 +224,7 @@ The GitHub Actions workflow in `.github/workflows/ci.yml` builds and tests all t
 - **LangChain text splitters and frameworks such as LlamaIndex and unstructured were not used.** They add significant dependency weight and do not track page provenance.
 - **PyMuPDF is AGPL-licensed.** A production deployment would need a commercial licence or a permissively licensed alternative such as pdfplumber.
 
-**Extraction and review.** The model returns each value with the passage it was read from; everything else is checked in code. Each quote is located in the document text, which is where the cited pages come from, so a quote the document does not contain produces no evidence. Matching tolerates case, punctuation and spacing differences only: measured against the samples, a fabricated quote that reverses a clause's meaning scores close to a genuinely misquoted one, so a looser threshold would accept it. Amounts and dates must also appear in their own quote. The worker reports confidence and any problems found; the API decides what needs review (`Review:ConfidenceThreshold`), so the review policy can change without re-extracting documents. In practice the model reports near-certain confidence even for ambiguous clauses, so the deterministic checks carry most of the weight.
+**Extraction and review.** The model returns each value with the passage it was read from; everything else is checked in code. Each quote is located in the document text, which is where the cited pages come from, so a quote the document does not contain produces no evidence. Matching tolerates case, punctuation and spacing differences only: measured against the samples, a fabricated quote that reverses a clause's meaning scores close to a genuinely misquoted one, so a looser threshold would accept it. Amounts and dates must also appear in their own quote. The worker reports confidence and any problems found; the API decides what needs review (`Review:ConfidenceThreshold`), so the review policy can change without re-extracting documents. In practice the model reports near-certain confidence even for ambiguous clauses, so the deterministic checks carry most of the weight. The score is stored and still applied by the review policy, but is not shown in the UI, where a confident figure beside an unclear value would mislead.
 
 - **gpt-4.1 is the default model.** gpt-4.1-mini intermittently corrupted the `£` sign in structured output, changing the digits that followed it. Model text containing control characters is now rejected rather than stored.
 - **rapidfuzz** provides the tolerant quote matching.
@@ -265,6 +265,7 @@ The code is already shaped for this: the organisation ID flows through every use
 - **Human review.** Fields needing review are flagged but cannot yet be confirmed or corrected in the UI with an audit trail.
 - **Live updates.** Pages poll while processing; SignalR would push status changes instead.
 - **Evaluation.** The live tests check two sample policies. A larger synthetic set with per-field accuracy and refusal-rate reporting would measure extraction quality as prompts and models change.
+- **Confidence.** Self-reported model confidence is not a reliable signal. A calibrated score, for example from agreement across repeated extractions or accuracy measured per field in evaluation, could replace it and make the confidence threshold meaningful.
 - **Policy types.** Only private medical insurance is modelled.
 
 ## Conventions

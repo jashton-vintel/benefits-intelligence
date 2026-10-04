@@ -10,11 +10,6 @@
     width: 28%;
   }
 
-  .confidence {
-    width: 7.5rem;
-    text-align: right;
-  }
-
   th[scope='row'] {
     font-weight: 600;
   }
@@ -60,22 +55,6 @@ q {
   border-left: 3px solid var(--leaf);
   font-size: 0.9rem;
   color: var(--text-secondary);
-}
-
-.confidence-pill {
-  display: inline-block;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: var(--success-surface);
-  color: var(--success);
-  font-size: 0.85rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-
-  &.low {
-    background: var(--warning-surface);
-    color: var(--warning-text);
-  }
 }
 
 .muted {

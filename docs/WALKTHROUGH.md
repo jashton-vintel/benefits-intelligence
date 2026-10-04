@@ -22,10 +22,7 @@ The API responds immediately and the policy page shows **Processing**. The uploa
 
 ## 2. Inspect the extraction
 
-The policy page shows the key figures, then every extracted field grouped into policy, coverage and eligibility. For each one:
-
-- **Confidence** is the model's own estimate.
-- **Source** is the page and the exact passage the value was read from. The page is found by locating the quote in the document, not reported by the model, and a quote that is not in the document is never shown as evidence.
+The policy page shows the key figures, then every extracted field grouped into policy, coverage and eligibility. For each one, the **Source** is the page and the exact passage the value was read from. The page is found by locating the quote in the document, not reported by the model, and a quote that is not in the document is never shown as evidence.
 
 ## 3. Upload the proposed policy
 

@@ -1,4 +1,3 @@
-import { PercentPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { REVIEW_REASON_LABELS } from '../policy-labels';
@@ -7,7 +6,6 @@ import { FactRow } from './fact-rows';
 
 @Component({
   selector: 'app-fact-table',
-  imports: [PercentPipe],
   templateUrl: './fact-table.html',
   styleUrl: './fact-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
