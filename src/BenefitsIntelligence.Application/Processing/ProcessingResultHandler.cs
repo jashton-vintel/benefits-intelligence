@@ -4,7 +4,7 @@ using BenefitsIntelligence.Domain.Processing;
 
 namespace BenefitsIntelligence.Application.Processing;
 
-public sealed class ProcessingResultHandler(IProcessingJobRepository jobs, TimeProvider timeProvider)
+public sealed class ProcessingResultHandler(IProcessingJobRepository jobs, ReviewPolicy reviewPolicy, TimeProvider timeProvider)
 {
     public const int MaxFailureMessageLength = 2000;
 
@@ -26,8 +26,7 @@ public sealed class ProcessingResultHandler(IProcessingJobRepository jobs, TimeP
         BenefitPolicy policy = await jobs.FindPolicyAsync(job.PolicyId, cancellationToken)
             ?? throw new InvalidOperationException($"Policy {job.PolicyId} for processing job {job.Id} does not exist.");
 
-        PolicyExtraction extraction = message.Extraction;
-        policy.RecordExtraction(extraction.Provider, extraction.SchemeName, extraction.AnnualExcess);
+        policy.RecordExtraction(ExtractionMapper.ToFacts(message.Extraction, reviewPolicy));
 
         await jobs.SaveChangesAsync(cancellationToken);
         return ProcessingResultOutcome.Recorded;

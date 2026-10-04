@@ -12,8 +12,14 @@ internal sealed class EfProcessingJobRepository(AppDbContext db) : IProcessingJo
     public Task<ProcessingJob?> FindByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken) =>
         db.ProcessingJobs.SingleOrDefaultAsync(j => j.CorrelationId == correlationId, cancellationToken);
 
+    // Extracted details are loaded so that recording a new extraction replaces them.
     public Task<BenefitPolicy?> FindPolicyAsync(Guid policyId, CancellationToken cancellationToken) =>
-        db.BenefitPolicies.SingleOrDefaultAsync(p => p.Id == policyId, cancellationToken);
+        db.BenefitPolicies
+            .Include(p => p.FieldAssessments)
+            .Include(p => p.CoverageItems)
+            .Include(p => p.EligibilityRules)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(p => p.Id == policyId, cancellationToken);
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {

@@ -61,11 +61,13 @@
     },
     "eligibility.employment_type": {
       "value": "Permanent, or fixed-term with an original duration of at least six months",
-      "evidence": "a person employed by the company on a permanent contract, or on a fixed-term contract with an original duration of at least six months"
+      "evidence": "a person employed by the company on a permanent contract, or on a fixed-term contract with an original duration of at least six months",
+      "keywords": ["permanent", "fixed"]
     },
     "eligibility.country": {
       "value": "United Kingdom or Republic of Ireland",
-      "evidence": "who are resident in the United Kingdom or the Republic of Ireland"
+      "evidence": "who are resident in the United Kingdom or the Republic of Ireland",
+      "keywords": ["united kingdom", "ireland"]
     },
     "eligibility.minimum_service_months": {
       "value": 0,

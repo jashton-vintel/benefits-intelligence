@@ -82,6 +82,8 @@ uv run pytest
 uv run ruff check .
 ```
 
+`uv run pytest -m live` runs extraction against the sample policies using the OpenAI key in `.env`. These tests call the API, so they are excluded from the default run.
+
 ### Trying it out
 
 Upload a PDF from Scalar (`POST /api/policies`) or with curl:
@@ -90,7 +92,7 @@ Upload a PDF from Scalar (`POST /api/policies`) or with curl:
 curl.exe -X POST http://localhost:8080/api/policies -F "name=Current policy" -F "file=@CurrentHealthPolicy.pdf;type=application/pdf"
 ```
 
-The response is `202 Accepted` with the policy and correlation IDs. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document.
+The response is `202 Accepted` with the policy and correlation IDs. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document, followed by every extracted fact with its confidence, the page and quote it was read from, and whether it needs review.
 
 ## Design decisions
 
@@ -101,6 +103,11 @@ The response is `202 Accepted` with the policy and correlation IDs. `GET /api/po
 - **Running header and footer removal, and page-offset mapping, are implemented in-house.** No mainstream library provides page-accurate evidence location, and it is central to the product.
 - **LangChain text splitters and frameworks such as LlamaIndex and unstructured were not used.** They add significant dependency weight and do not track page provenance.
 - **PyMuPDF is AGPL-licensed.** A production deployment would need a commercial licence or a permissively licensed alternative such as pdfplumber.
+
+**Extraction and review.** The model returns each value with the passage it was read from; everything else is checked in code. Each quote is located in the document text, which is where the cited pages come from, so a quote the document does not contain produces no evidence. Matching tolerates case, punctuation and spacing differences only: measured against the samples, a fabricated quote that reverses a clause's meaning scores close to a genuinely misquoted one, so a looser threshold would accept it. Amounts and dates must also appear in their own quote. The worker reports confidence and any problems found; the API decides what needs review (`Review:ConfidenceThreshold`), so the review policy can change without re-extracting documents. In practice the model reports near-certain confidence even for ambiguous clauses, so the deterministic checks carry most of the weight.
+
+- **gpt-4.1 is the default model.** gpt-4.1-mini intermittently corrupted the `£` sign in structured output, changing the digits that followed it. Model text containing control characters is now rejected rather than stored.
+- **rapidfuzz** provides the tolerant quote matching.
 
 **Sample data.** `sample-data/policies` holds the wording of two synthetic policies, rendered to PDF by `src/python/scripts/render_sample_policies.py`. `sample-data/expected` records the known answers, the evidence for each, and deliberately planted edge cases: conflicting limits, eligibility defined across sections, an ambiguous clause and an embedded prompt-injection attempt. Tests check that every expected evidence quote can be located in the rendered documents.
 

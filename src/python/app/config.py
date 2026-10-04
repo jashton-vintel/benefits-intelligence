@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # SecretStr keeps the key out of reprs and logs. Optional here so the rest of the
     # settings stay usable without it; the worker refuses to start if it is missing.
     openai_api_key: SecretStr | None = None
-    openai_model: str = "gpt-4.1-mini"
+    openai_model: str = "gpt-4.1"
     openai_timeout_seconds: float = 60
 
 

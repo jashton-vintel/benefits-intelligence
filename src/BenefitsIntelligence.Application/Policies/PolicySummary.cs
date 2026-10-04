@@ -12,6 +12,7 @@ public sealed record PolicySummary(
     string? Provider,
     string? SchemeName,
     decimal? AnnualExcess,
+    bool NeedsReview,
     ProcessingStatus Status,
     string? FailureCode,
     string? FailureMessage,

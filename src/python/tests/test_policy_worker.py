@@ -41,7 +41,8 @@ async def test_completion_carries_document_summary_and_extraction(
     assert completed.message_id != request.message_id
     assert completed.document.page_count == 7
     assert completed.document.chunk_count == len(fake_extractor.received)
-    assert completed.extraction == fake_extractor.result
+    assert completed.extraction.provider.value == "Atlas Healthcare"
+    assert completed.extraction.annual_excess.evidence is not None
 
 
 async def test_invalid_document_is_reported_before_extraction(

@@ -6,12 +6,221 @@
   "policy_id": "22222222-2222-2222-2222-222222222222",
   "status": "completed",
   "document": {
-    "page_count": 7,
-    "chunk_count": 8
+    "page_count": 5,
+    "chunk_count": 6
   },
   "extraction": {
-    "provider": "Atlas Healthcare",
-    "scheme_name": "Corporate Plus",
-    "annual_excess": "100.00"
+    "schema_version": "1.0",
+    "benefit_type": "private_medical",
+    "provider": {
+      "value": "NorthStar Health",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 1,
+        "page_end": 1,
+        "quote": "NorthStar Health plc"
+      },
+      "issues": []
+    },
+    "scheme_name": {
+      "value": "Essentials Select",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 1,
+        "page_end": 1,
+        "quote": "Essentials Select"
+      },
+      "issues": []
+    },
+    "annual_premium": {
+      "value": "108000.00",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 3,
+        "page_end": 3,
+        "quote": "The annual premium for the scheme is £108,000"
+      },
+      "issues": []
+    },
+    "annual_excess": {
+      "value": "150.00",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 3,
+        "page_end": 3,
+        "quote": "An excess of £150 applies to each covered person once in each scheme year"
+      },
+      "issues": []
+    },
+    "effective_date": {
+      "value": "2027-04-01",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 1,
+        "page_end": 1,
+        "quote": "1 April 2027"
+      },
+      "issues": []
+    },
+    "renewal_date": {
+      "value": "2028-04-01",
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 1,
+        "page_end": 1,
+        "quote": "1 April 2028"
+      },
+      "issues": []
+    },
+    "dependants_allowed": {
+      "value": true,
+      "confidence": 0.95,
+      "evidence": {
+        "page_start": 2,
+        "page_end": 2,
+        "quote": "Employees may apply to add their spouse or partner and their children to the scheme"
+      },
+      "issues": []
+    },
+    "dependants_included": {
+      "value": null,
+      "confidence": 0.4,
+      "evidence": {
+        "page_start": 2,
+        "page_end": 3,
+        "quote": "Arrangements for the cost of dependant cover, including whether any contribution will be required from the employee, will be confirmed at renewal"
+      },
+      "issues": [
+        "ambiguous"
+      ]
+    },
+    "coverage": {
+      "inpatient": {
+        "value": {
+          "covered": true,
+          "limit": "Paid in full at NorthStar Select hospitals",
+          "session_limit": null
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "Eligible in-patient and day-patient treatment is covered in full at hospitals in the NorthStar Select network"
+        },
+        "issues": []
+      },
+      "outpatient": {
+        "value": {
+          "covered": true,
+          "limit": "Paid in full following GP referral",
+          "session_limit": null
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "Out-patient consultations with a specialist, together with diagnostic tests and scans, are covered in full"
+        },
+        "issues": []
+      },
+      "diagnostics": {
+        "value": {
+          "covered": true,
+          "limit": "Paid in full",
+          "session_limit": null
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "together with diagnostic tests and scans, are covered in full"
+        },
+        "issues": []
+      },
+      "physiotherapy": {
+        "value": {
+          "covered": true,
+          "limit": "10 sessions per scheme year with GP or specialist referral; 6 if self-referred",
+          "session_limit": 10
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "Physiotherapy is covered for up to ten sessions per covered person in each scheme year"
+        },
+        "issues": []
+      },
+      "mental_health": {
+        "value": {
+          "covered": true,
+          "limit": "Paid in full; out-patient therapy reviewed every twelve sessions",
+          "session_limit": null
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 4,
+          "page_end": 4,
+          "quote": "Mental health treatment is covered in full"
+        },
+        "issues": []
+      },
+      "cancer": {
+        "value": {
+          "covered": true,
+          "limit": "Paid in full, excluding experimental or unlicensed drugs; excess applies",
+          "session_limit": null
+        },
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 3,
+          "page_end": 3,
+          "quote": "We cover eligible cancer treatment in full"
+        },
+        "issues": []
+      }
+    },
+    "eligibility": {
+      "employment_type": {
+        "value": "Permanent, or fixed-term with an original duration of at least six months",
+        "confidence": 0.85,
+        "evidence": {
+          "page_start": 1,
+          "page_end": 1,
+          "quote": "a person employed by the company on a permanent contract, or on a fixed-term contract with an original duration of at least six months"
+        },
+        "issues": []
+      },
+      "country": {
+        "value": "United Kingdom or Republic of Ireland",
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 2,
+          "page_end": 2,
+          "quote": "who are resident in the United Kingdom or the Republic of Ireland"
+        },
+        "issues": []
+      },
+      "minimum_service_months": {
+        "value": 0,
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 2,
+          "page_end": 2,
+          "quote": "There is no minimum period of service before an employee can join"
+        },
+        "issues": []
+      },
+      "minimum_grade": {
+        "value": null,
+        "confidence": 0.95,
+        "evidence": {
+          "page_start": 2,
+          "page_end": 2,
+          "quote": "cover is not restricted by grade or job role"
+        },
+        "issues": []
+      }
+    }
   }
 }

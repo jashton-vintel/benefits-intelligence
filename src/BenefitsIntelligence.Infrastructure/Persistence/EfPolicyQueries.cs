@@ -15,12 +15,36 @@ internal sealed class EfPolicyQueries(AppDbContext db) : IPolicyQueries
         return await ToSummaries(policies).ToListAsync(cancellationToken);
     }
 
-    public async Task<PolicySummary?> FindAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken)
+    public async Task<PolicyDetail?> FindAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken)
     {
         IQueryable<BenefitPolicy> policies = db.BenefitPolicies
             .Where(p => p.OrganisationId == organisationId && p.Id == policyId);
 
-        return await ToSummaries(policies).SingleOrDefaultAsync(cancellationToken);
+        PolicySummary? summary = await ToSummaries(policies).SingleOrDefaultAsync(cancellationToken);
+        if (summary is null)
+        {
+            return null;
+        }
+
+        BenefitPolicy policy = await policies
+            .AsNoTracking()
+            .Include(p => p.FieldAssessments)
+            .Include(p => p.CoverageItems)
+            .Include(p => p.EligibilityRules)
+            .AsSplitQuery()
+            .SingleAsync(cancellationToken);
+
+        return new PolicyDetail(
+            summary.Id,
+            summary.Name,
+            summary.BenefitType,
+            summary.FileName,
+            summary.CreatedAt,
+            summary.Status,
+            summary.FailureCode,
+            summary.FailureMessage,
+            summary.StatusUpdatedAt,
+            ExtractionDetail.From(policy));
     }
 
     private IQueryable<PolicySummary> ToSummaries(IQueryable<BenefitPolicy> policies)
@@ -44,6 +68,7 @@ internal sealed class EfPolicyQueries(AppDbContext db) : IPolicyQueries
                 row.policy.Provider,
                 row.policy.SchemeName,
                 row.policy.AnnualExcess,
+                row.policy.NeedsReview,
                 row.job.Status,
                 row.job.FailureCode,
                 row.job.FailureMessage,

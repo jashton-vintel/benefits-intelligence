@@ -36,7 +36,7 @@ class NormalisedDocument:
     page_offsets: tuple[int, ...]
 
     @cached_property
-    def _searchable(self) -> str:
+    def searchable(self) -> str:
         # Same length as the text, so offsets found here are valid offsets into it.
         return self.text.replace("\n", " ")
 
@@ -45,7 +45,7 @@ class NormalisedDocument:
 
     def locate(self, quote: str) -> EvidenceLocation | None:
         needle = flatten(normalise_text(quote))
-        start = self._searchable.find(needle) if needle else -1
+        start = self.searchable.find(needle) if needle else -1
         if start < 0:
             return None
         return EvidenceLocation(self.page_at(start), self.page_at(start + len(needle) - 1))

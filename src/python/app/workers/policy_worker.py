@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import aclosing
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,11 +12,12 @@ from app.logging_config import configure_logging, log_context
 from app.messaging.publisher import publish_completed, publish_failed
 from app.messaging.rabbit_connection import connect
 from app.messaging.topology import declare_topology
-from app.models.extraction import DocumentSummary
+from app.models.document import DocumentSummary
 from app.models.messages import ProcessPolicyCompleted, ProcessPolicyFailed, ProcessPolicyRequested
 from app.services.document_paths import resolve_document_path
 from app.services.document_preparation import prepare_document
 from app.services.errors import DocumentProcessingError
+from app.services.extraction_assembler import assemble_extraction
 from app.services.llm_extractor import OpenAIPolicyExtractor, PolicyExtractor
 
 logger = logging.getLogger(__name__)
@@ -31,12 +33,13 @@ async def handle_process_requested(
     prepared = await asyncio.to_thread(prepare_document, path)
     logger.info("Processed %d pages (%d chunks)", prepared.page_count, len(prepared.chunks))
 
-    extraction = await extractor.extract(prepared.chunks)
+    output = await extractor.extract(prepared.chunks)
+    extraction = assemble_extraction(output, prepared.document)
     logger.info(
-        "Extracted provider=%s scheme=%s excess=%s",
-        extraction.provider,
-        extraction.scheme_name,
-        extraction.annual_excess,
+        "Extracted %s %s (%d facts with issues)",
+        extraction.provider.value,
+        extraction.scheme_name.value,
+        sum(1 for fact in extraction.facts().values() if fact.issues),
     )
 
     return ProcessPolicyCompleted(
@@ -111,20 +114,20 @@ def create_extractor(settings: Settings) -> OpenAIPolicyExtractor:
 
 async def run() -> None:
     settings = load_settings()
-    extractor = create_extractor(settings)
-    await extractor.verify()
-    connection = await connect(settings)
-    async with connection:
-        channel = await connection.channel()
-        await channel.set_qos(prefetch_count=1)
-        exchange, queue = await declare_topology(channel)
+    async with aclosing(create_extractor(settings)) as extractor:
+        await extractor.verify()
+        connection = await connect(settings)
+        async with connection:
+            channel = await connection.channel()
+            await channel.set_qos(prefetch_count=1)
+            exchange, queue = await declare_topology(channel)
 
-        logger.info(
-            "Waiting for messages on %s (documents in %s)", queue.name, settings.document_root
-        )
-        async with queue.iterator() as messages:
-            async for message in messages:
-                await on_message(message, exchange, settings.document_root, extractor)
+            logger.info(
+                "Waiting for messages on %s (documents in %s)", queue.name, settings.document_root
+            )
+            async with queue.iterator() as messages:
+                async for message in messages:
+                    await on_message(message, exchange, settings.document_root, extractor)
 
 
 def main() -> None:

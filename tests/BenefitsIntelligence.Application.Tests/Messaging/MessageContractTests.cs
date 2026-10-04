@@ -35,8 +35,28 @@ public class MessageContractTests
         Assert.Equal(FixtureTenantId, message.TenantId);
         Assert.Equal(FixturePolicyId, message.PolicyId);
         Assert.Equal("completed", message.Status);
-        Assert.Equal(new DocumentSummary(PageCount: 7, ChunkCount: 8), message.Document);
-        Assert.Equal(new PolicyExtraction("Atlas Healthcare", "Corporate Plus", 100.00m), message.Extraction);
+        Assert.Equal(new DocumentSummary(PageCount: 5, ChunkCount: 6), message.Document);
+    }
+
+    [Fact]
+    public void PolicyExtractionReadsSharedFixture()
+    {
+        PolicyExtraction extraction = Deserialize<ProcessPolicyCompleted>("process_completed.json").Extraction;
+
+        Assert.Equal(PolicyExtraction.SupportedSchemaVersion, extraction.SchemaVersion);
+        Assert.Equal("private_medical", extraction.BenefitType);
+        Assert.Equal("NorthStar Health", extraction.Provider.Value);
+        Assert.Equal(108000.00m, extraction.AnnualPremium.Value);
+        Assert.Equal(new FactEvidence(3, 3, "An excess of £150 applies to each covered person once in each scheme year"), extraction.AnnualExcess.Evidence);
+        Assert.Equal(new DateOnly(2027, 4, 1), extraction.EffectiveDate.Value);
+        Assert.Null(extraction.DependantsIncluded.Value);
+        Assert.Equal(0.4, extraction.DependantsIncluded.Confidence);
+        Assert.Equal([FactIssue.Ambiguous], extraction.DependantsIncluded.Issues);
+        Assert.Equal(new CoverageTerms(true, "10 sessions per scheme year with GP or specialist referral; 6 if self-referred", 10), extraction.Coverage.Physiotherapy.Value);
+        Assert.Equal(0, extraction.Eligibility.MinimumServiceMonths.Value);
+        Assert.Null(extraction.Eligibility.MinimumGrade.Value);
+        Assert.NotNull(extraction.Eligibility.MinimumGrade.Evidence);
+        Assert.Empty(extraction.Eligibility.MinimumGrade.Issues);
     }
 
     [Fact]
@@ -70,20 +90,31 @@ public class MessageContractTests
         Assert.Equal(PropertyNames(json), PropertyNames(serialized));
     }
 
-    private static T Deserialize<T>(string fixture)
-    {
-        var message = JsonSerializer.Deserialize<T>(ReadFixture(fixture), MessageSerialization.Options);
-        Assert.NotNull(message);
-        return message;
-    }
+    private static T Deserialize<T>(string fixture) => ContractFixtures.Deserialize<T>(fixture);
 
-    private static string ReadFixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", name));
+    private static string ReadFixture(string name) => ContractFixtures.Read(name);
 
+    // Paths of every property, nested ones included, so a renamed field anywhere fails the test.
     private static SortedSet<string> PropertyNames(string json)
     {
         using var document = JsonDocument.Parse(json);
-        return new SortedSet<string>(
-            document.RootElement.EnumerateObject().Select(property => property.Name),
-            StringComparer.Ordinal);
+        SortedSet<string> names = new(StringComparer.Ordinal);
+        AddPropertyNames(document.RootElement, prefix: "", names);
+        return names;
+    }
+
+    private static void AddPropertyNames(JsonElement element, string prefix, SortedSet<string> names)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            string path = prefix + property.Name;
+            names.Add(path);
+            AddPropertyNames(property.Value, path + ".", names);
+        }
     }
 }

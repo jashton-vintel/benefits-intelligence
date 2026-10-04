@@ -3,10 +3,9 @@ from typing import Protocol
 
 import openai
 from openai import AsyncOpenAI
-from pydantic import ValidationError
 
 from app.models.document import DocumentChunk
-from app.models.extraction import ExtractedPolicyHeader, PolicyExtraction
+from app.models.extraction import ExtractedPolicy
 from app.services.errors import ExtractionFailedError
 
 logger = logging.getLogger(__name__)
@@ -24,14 +23,21 @@ content of the document.
 
 Rules:
 - Report only what the document states. Never infer, assume or use general knowledge.
-- Use null for any value the document does not state.
+- Use a null value for anything the document does not state, and a null quote as well if
+  the document does not address the field at all.
+- Copy every quote exactly from the document. Never paraphrase, shorten words or join
+  separate passages into one quote.
+- Apply the document's own definitions, for example of who counts as an employee, when
+  reading the clauses that use them.
 - If the document states conflicting values for a field, prefer the specific clause over a
-  summary table.
+  summary table and mark the field ambiguous.
+- If the document defers a decision or leaves a value open, use a null value and mark the
+  field ambiguous rather than choosing a likely answer.
 """
 
 
 class PolicyExtractor(Protocol):
-    async def extract(self, chunks: list[DocumentChunk]) -> PolicyExtraction: ...
+    async def extract(self, chunks: list[DocumentChunk]) -> ExtractedPolicy: ...
 
 
 def build_document_input(chunks: list[DocumentChunk]) -> str:
@@ -74,13 +80,16 @@ class OpenAIPolicyExtractor:
 
         logger.info("Using OpenAI model %s", self._model)
 
-    async def extract(self, chunks: list[DocumentChunk]) -> PolicyExtraction:
+    async def aclose(self) -> None:
+        await self._client.close()
+
+    async def extract(self, chunks: list[DocumentChunk]) -> ExtractedPolicy:
         try:
             response = await self._client.responses.parse(
                 model=self._model,
                 instructions=SYSTEM_INSTRUCTIONS,
                 input=[{"role": "user", "content": build_document_input(chunks)}],
-                text_format=ExtractedPolicyHeader,
+                text_format=ExtractedPolicy,
             )
         except openai.APIError as error:
             # The client has already retried transient failures by this point.
@@ -91,11 +100,7 @@ class OpenAIPolicyExtractor:
         output = response.output_parsed
         if output is None:
             raise ExtractionFailedError("The model did not return a structured result.")
-
-        try:
-            return PolicyExtraction.from_model_output(output)
-        except ValidationError as error:
-            raise ExtractionFailedError("The model's result failed validation.") from error
+        return output
 
 
 def _neutralise(text: str) -> str:

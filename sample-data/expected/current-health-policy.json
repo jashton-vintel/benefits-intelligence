@@ -60,11 +60,13 @@
     },
     "eligibility.employment_type": {
       "value": "Permanent",
-      "evidence": "they are employed on a permanent contract of employment"
+      "evidence": "they are employed on a permanent contract of employment",
+      "keywords": ["permanent"]
     },
     "eligibility.country": {
       "value": "United Kingdom",
-      "evidence": "they normally live and work in the United Kingdom"
+      "evidence": "they normally live and work in the United Kingdom",
+      "keywords": ["united kingdom"]
     },
     "eligibility.minimum_service_months": {
       "value": 3,
@@ -72,7 +74,8 @@
     },
     "eligibility.minimum_grade": {
       "value": "Grade 4",
-      "evidence": "they hold a role at Grade 4 or above"
+      "evidence": "they hold a role at Grade 4 or above",
+      "keywords": ["4"]
     }
   },
   "checks": [

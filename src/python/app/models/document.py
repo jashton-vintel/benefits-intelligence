@@ -16,3 +16,10 @@ class DocumentChunk(BaseModel):
     token_count: int = Field(ge=0)
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
+
+
+class DocumentSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    page_count: int = Field(ge=1)
+    chunk_count: int = Field(ge=1)

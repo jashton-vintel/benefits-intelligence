@@ -4,7 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.extraction import DocumentSummary, PolicyExtraction
+from app.models.document import DocumentSummary
+from app.models.policy import PolicyExtraction
 
 
 class ProcessPolicyRequested(BaseModel):

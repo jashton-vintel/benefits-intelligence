@@ -15,7 +15,7 @@ public class ProcessingResultHandlerTests
 
     public ProcessingResultHandlerTests()
     {
-        _handler = new ProcessingResultHandler(_jobs, TimeProvider.System);
+        _handler = new ProcessingResultHandler(_jobs, new ReviewPolicy(confidenceThreshold: 0.8), TimeProvider.System);
     }
 
     [Fact]
@@ -38,9 +38,83 @@ public class ProcessingResultHandlerTests
         await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
 
         BenefitPolicy policy = _policies[job.PolicyId];
-        Assert.Equal("Atlas Healthcare", policy.Provider);
-        Assert.Equal("Corporate Plus", policy.SchemeName);
-        Assert.Equal(100.00m, policy.AnnualExcess);
+        Assert.Equal("NorthStar Health", policy.Provider);
+        Assert.Equal("Essentials Select", policy.SchemeName);
+        Assert.Equal(108000.00m, policy.AnnualPremium);
+        Assert.Equal(150.00m, policy.AnnualExcess);
+        Assert.Equal(new DateOnly(2027, 4, 1), policy.EffectiveDate);
+        Assert.Null(policy.DependantsIncluded);
+        Assert.Equal(10, policy.CoverageItems.Single(c => c.Type == CoverageType.Physiotherapy).SessionLimit);
+        Assert.Equal("0", policy.EligibilityRules.Single(r => r.Type == EligibilityRuleType.MinimumServiceMonths).Value);
+    }
+
+    [Fact]
+    public async Task CompletionRecordsWhereEachFactWasFound()
+    {
+        ProcessingJob job = QueuedJob();
+
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        FactAssessment excess = FieldAssessment(_policies[job.PolicyId], PolicyField.AnnualExcess);
+        Assert.Equal(new Evidence(3, 3, "An excess of £150 applies to each covered person once in each scheme year"), excess.Evidence);
+        Assert.Equal(0.95, excess.Confidence);
+        Assert.False(excess.NeedsReview);
+    }
+
+    [Fact]
+    public async Task AmbiguousFactPutsThePolicyUpForReview()
+    {
+        ProcessingJob job = QueuedJob();
+
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        BenefitPolicy policy = _policies[job.PolicyId];
+        Assert.True(policy.NeedsReview);
+        Assert.Equal(
+            ReviewReasons.Ambiguous | ReviewReasons.LowConfidence,
+            FieldAssessment(policy, PolicyField.DependantsIncluded).ReviewReasons);
+    }
+
+    [Fact]
+    public async Task PolicyWithoutProblemsDoesNotNeedReview()
+    {
+        ProcessingJob job = QueuedJob();
+        ProcessPolicyCompleted completion = CompletionFor(job);
+        PolicyExtraction extraction = completion.Extraction;
+        completion = completion with
+        {
+            Extraction = extraction with
+            {
+                DependantsIncluded = extraction.DependantsIncluded with { Confidence = 0.95, Issues = [] },
+            },
+        };
+
+        await _handler.HandleCompletedAsync(completion, CancellationToken.None);
+
+        Assert.False(_policies[job.PolicyId].NeedsReview);
+    }
+
+    [Fact]
+    public async Task ConfidenceThresholdComesFromTheReviewPolicy()
+    {
+        ProcessingJob job = QueuedJob();
+        ProcessingResultHandler strictHandler = new(_jobs, new ReviewPolicy(confidenceThreshold: 0.9), TimeProvider.System);
+
+        await strictHandler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        EligibilityRule employmentType = _policies[job.PolicyId].EligibilityRules.Single(r => r.Type == EligibilityRuleType.EmploymentType);
+        Assert.Equal(ReviewReasons.LowConfidence, employmentType.Assessment.ReviewReasons);
+    }
+
+    [Fact]
+    public async Task UnsupportedExtractionSchemaIsRejected()
+    {
+        ProcessingJob job = QueuedJob();
+        ProcessPolicyCompleted completion = CompletionFor(job);
+        completion = completion with { Extraction = completion.Extraction with { SchemaVersion = "2.0" } };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _handler.HandleCompletedAsync(completion, CancellationToken.None));
+        Assert.Equal(0, _jobs.SaveCount);
     }
 
     [Fact]
@@ -49,14 +123,17 @@ public class ProcessingResultHandlerTests
         ProcessingJob job = QueuedJob();
         await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
 
-        ProcessPolicyCompleted redelivered = CompletionFor(job) with
+        ProcessPolicyCompleted redelivered = CompletionFor(job);
+        redelivered = redelivered with
         {
-            Extraction = new PolicyExtraction("Someone Else", "Other Plan", 999m),
+            Extraction = redelivered.Extraction with
+            {
+                Provider = redelivered.Extraction.Provider with { Value = "Someone Else" },
+            },
         };
         await _handler.HandleCompletedAsync(redelivered, CancellationToken.None);
 
-        Assert.Equal("Atlas Healthcare", _policies[job.PolicyId].Provider);
-        Assert.Equal(100.00m, _policies[job.PolicyId].AnnualExcess);
+        Assert.Equal("NorthStar Health", _policies[job.PolicyId].Provider);
     }
 
     [Fact]
@@ -187,13 +264,13 @@ public class ProcessingResultHandlerTests
     }
 
     private static ProcessPolicyCompleted CompletionFor(ProcessingJob job) =>
-        new(
-            MessageId: Guid.NewGuid(),
-            CorrelationId: job.CorrelationId,
-            SchemaVersion: MessageSerialization.SchemaVersion,
-            TenantId: Guid.NewGuid(),
-            PolicyId: job.PolicyId,
-            Status: "completed",
-            Document: new DocumentSummary(PageCount: 7, ChunkCount: 8),
-            Extraction: new PolicyExtraction("Atlas Healthcare", "Corporate Plus", 100.00m));
+        ContractFixtures.Deserialize<ProcessPolicyCompleted>("process_completed.json") with
+        {
+            MessageId = Guid.NewGuid(),
+            CorrelationId = job.CorrelationId,
+            PolicyId = job.PolicyId,
+        };
+
+    private static FactAssessment FieldAssessment(BenefitPolicy policy, PolicyField field) =>
+        policy.FieldAssessments.Single(a => a.Field == field).Assessment;
 }

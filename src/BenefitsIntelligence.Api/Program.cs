@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using BenefitsIntelligence.Api.Endpoints;
 using BenefitsIntelligence.Application.Policies;
 using BenefitsIntelligence.Application.Processing;
+using BenefitsIntelligence.Domain.Policies;
 using BenefitsIntelligence.Infrastructure;
 using BenefitsIntelligence.Infrastructure.Persistence;
 
@@ -16,6 +17,8 @@ builder.Services.AddProblemDetails();
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(new ReviewPolicy(
+    builder.Configuration.GetValue("Review:ConfidenceThreshold", ReviewPolicy.DefaultConfidenceThreshold)));
 builder.Services.AddScoped<PolicyUploadService>();
 builder.Services.AddScoped<ProcessingResultHandler>();
 

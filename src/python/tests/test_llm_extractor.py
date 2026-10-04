@@ -1,14 +1,14 @@
-from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any, cast
 
 import httpx2
 import openai
 import pytest
+from conftest import model_output_from_expected
 from openai import AsyncOpenAI
 
 from app.models.document import DocumentChunk
-from app.models.extraction import ExtractedPolicyHeader
+from app.models.extraction import ExtractedPolicy
 from app.services.errors import ExtractionFailedError
 from app.services.llm_extractor import (
     SYSTEM_INSTRUCTIONS,
@@ -26,7 +26,7 @@ def chunk(index: int, text: str, pages: tuple[int, int] = (1, 1)) -> DocumentChu
 
 
 class FakeResponses:
-    def __init__(self, result: ExtractedPolicyHeader | None = None, error: Exception | None = None):
+    def __init__(self, result: ExtractedPolicy | None = None, error: Exception | None = None):
         self._result = result
         self._error = error
         self.calls: list[dict[str, Any]] = []
@@ -41,16 +41,6 @@ class FakeResponses:
 def extractor_returning(responses: FakeResponses) -> OpenAIPolicyExtractor:
     client = cast(AsyncOpenAI, SimpleNamespace(responses=responses))
     return OpenAIPolicyExtractor(client, model="test-model")
-
-
-def header(**overrides: object) -> ExtractedPolicyHeader:
-    values: dict[str, object] = {
-        "provider": "NorthStar Health",
-        "scheme_name": "Essentials Select",
-        "annual_excess": 150,
-    }
-    values.update(overrides)
-    return ExtractedPolicyHeader.model_validate(values)
 
 
 class FakeModels:
@@ -129,7 +119,7 @@ def test_instructions_declare_document_content_untrusted() -> None:
 
 
 async def test_document_text_is_sent_only_in_the_user_message() -> None:
-    responses = FakeResponses(result=header())
+    responses = FakeResponses(result=model_output_from_expected("proposed-health-policy"))
 
     await extractor_returning(responses).extract([chunk(0, INJECTION)])
 
@@ -139,21 +129,21 @@ async def test_document_text_is_sent_only_in_the_user_message() -> None:
     assert call["input"] == [
         {"role": "user", "content": build_document_input([chunk(0, INJECTION)])}
     ]
-    assert call["text_format"] is ExtractedPolicyHeader
+    assert call["text_format"] is ExtractedPolicy
 
 
-async def test_returns_validated_extraction() -> None:
-    extraction = await extractor_returning(FakeResponses(result=header())).extract([chunk(0, "x")])
+async def test_returns_the_model_output() -> None:
+    expected = model_output_from_expected("proposed-health-policy")
 
-    assert extraction.provider == "NorthStar Health"
-    assert extraction.annual_excess == Decimal("150.00")
+    output = await extractor_returning(FakeResponses(result=expected)).extract([chunk(0, "x")])
+
+    assert output == expected
 
 
 @pytest.mark.parametrize(
     ("responses", "reason"),
     [
         (FakeResponses(result=None), "did not return"),
-        (FakeResponses(result=header(annual_excess=-5)), "failed validation"),
         (
             FakeResponses(
                 error=openai.APIConnectionError(
@@ -163,7 +153,7 @@ async def test_returns_validated_extraction() -> None:
             "request failed",
         ),
     ],
-    ids=["refusal", "invalid-output", "service-unavailable"],
+    ids=["refusal", "service-unavailable"],
 )
 async def test_failures_become_extraction_failed(responses: FakeResponses, reason: str) -> None:
     with pytest.raises(ExtractionFailedError, match=reason) as error:
