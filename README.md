@@ -92,6 +92,18 @@ curl.exe -X POST http://localhost:8080/api/policies -F "name=Current policy" -F 
 
 The response is `202 Accepted` with the policy and correlation IDs. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document.
 
+## Design decisions
+
+**Document text pipeline.** PDFs are parsed page by page with PyMuPDF, normalised, and split into sentence-aligned chunks. Page boundaries are tracked through every stage so any extracted fact can be traced back to the page it came from.
+
+- **ftfy** repairs extracted text (ligatures, mis-decoded characters, curly quotes). It was preferred over Unicode NFKC normalisation, which also rewrites symbols such as `½` and `m²`.
+- **tiktoken** sizes chunks in model tokens rather than characters, so chunk budgets match how the model is limited and billed.
+- **Running header and footer removal, and page-offset mapping, are implemented in-house.** No mainstream library provides page-accurate evidence location, and it is central to the product.
+- **LangChain text splitters and frameworks such as LlamaIndex and unstructured were not used.** They add significant dependency weight and do not track page provenance.
+- **PyMuPDF is AGPL-licensed.** A production deployment would need a commercial licence or a permissively licensed alternative such as pdfplumber.
+
+**Sample data.** `sample-data/policies` holds the wording of two synthetic policies, rendered to PDF by `src/python/scripts/render_sample_policies.py`. `sample-data/expected` records the known answers, the evidence for each, and deliberately planted edge cases: conflicting limits, eligibility defined across sections, an ambiguous clause and an embedded prompt-injection attempt. Tests check that every expected evidence quote can be located in the rendered documents.
+
 ## Conventions
 
 - Package versions are managed centrally in `Directory.Packages.props`. Do not put `Version` on `PackageReference` items.
