@@ -1,0 +1,94 @@
+<p class="breadcrumb"><a routerLink="/">Policies</a></p>
+
+<header class="page-header">
+  <div>
+    <h1>Upload a policy</h1>
+    <p class="muted">
+      Add a policy document and its key terms will be extracted with their sources.
+    </p>
+  </div>
+</header>
+
+<div class="layout">
+  <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (serverErrors().length > 0) {
+      <ul class="alert danger" role="alert">
+        @for (message of serverErrors(); track message) {
+          <li>{{ message }}</li>
+        }
+      </ul>
+    }
+
+    <div class="field">
+      <label for="name">Policy name</label>
+      <input
+        id="name"
+        type="text"
+        formControlName="name"
+        placeholder="For example, Proposed scheme 2027"
+        [attr.maxlength]="maxNameLength"
+        autocomplete="off"
+      />
+      @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+        <p class="field-error">Enter a name for the policy.</p>
+      }
+    </div>
+
+    <div class="field">
+      <label for="type">Policy type</label>
+      <select id="type" disabled>
+        <option>{{ benefitTypeLabel }}</option>
+      </select>
+      <p class="hint">Private medical insurance is the only type currently supported.</p>
+    </div>
+
+    <div class="field">
+      <span class="label" id="file-label">Policy document</span>
+      <label
+        class="dropzone"
+        for="file"
+        [class.dragging]="dragging()"
+        [class.chosen]="file() && !fileError()"
+        (dragover)="dragOver($event)"
+        (dragleave)="dragging.set(false)"
+        (drop)="drop($event)"
+      >
+        <input
+          id="file"
+          type="file"
+          accept=".pdf,application/pdf"
+          aria-labelledby="file-label"
+          (change)="selectFile($event)"
+        />
+        @if (file(); as chosen) {
+          <strong>{{ chosen.name }}</strong>
+          <span class="muted">{{ formatFileSize(chosen.size) }} · choose another</span>
+        } @else {
+          <strong>Drop a PDF here, or browse</strong>
+          <span class="muted">Up to 20 MB</span>
+        }
+      </label>
+      @if (fileError(); as error) {
+        <p class="field-error">{{ error }}</p>
+      }
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="button" [disabled]="submitting()">
+        {{ submitting() ? 'Uploading…' : 'Upload and extract' }}
+      </button>
+      <a routerLink="/">Cancel</a>
+    </div>
+  </form>
+
+  <aside class="next">
+    <h2>What happens next</h2>
+    <ol>
+      <li>The document is queued and read page by page.</li>
+      <li>Premiums, excesses, coverage and eligibility are extracted, each with a quote.</li>
+      <li>Every quote is checked against the document before it is shown.</li>
+      <li>Anything ambiguous or unsupported is flagged for review.</li>
+    </ol>
+    <p class="muted">You will be taken to the policy, which updates as soon as it is ready.</p>
+  </aside>
+</div>

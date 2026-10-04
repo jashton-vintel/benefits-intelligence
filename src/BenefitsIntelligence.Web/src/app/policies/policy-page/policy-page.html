@@ -1,0 +1,62 @@
+<p class="breadcrumb"><a routerLink="/">Policies</a></p>
+
+@if (loadError(); as error) {
+  <p class="alert danger" role="alert">{{ error }}</p>
+} @else if (policy(); as policy) {
+  <section class="summary card">
+    <header class="page-header">
+      <div>
+        <h1>{{ policy.name }}</h1>
+        <p class="muted">
+          {{ benefitTypeLabels[policy.benefitType] }} · {{ policy.fileName }} · uploaded
+          {{ policy.createdAt | date: 'd MMM y, HH:mm' }}
+        </p>
+      </div>
+      <app-status-badge
+        [status]="policy.status"
+        [needsReview]="policy.extraction?.needsReview ?? false"
+      />
+    </header>
+
+    @if (keyFigures().length > 0) {
+      <dl class="key-figures">
+        @for (figure of keyFigures(); track figure.label) {
+          <div [class.flagged]="figure.assessment.needsReview">
+            <dt>{{ figure.label }}</dt>
+            <dd>{{ figure.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+  </section>
+
+  @if (inFlight()) {
+    <p class="alert info" aria-live="polite">
+      The document is being processed. This page updates when extraction finishes.
+    </p>
+  }
+
+  @if (policy.status === 'Failed') {
+    <div class="alert danger" role="alert">
+      <strong>Processing failed</strong>
+      <p>
+        {{ policy.failureMessage }} <span class="muted">({{ policy.failureCode }})</span>
+      </p>
+    </div>
+  }
+
+  @if (policy.extraction) {
+    @if (reviewCount() > 0) {
+      <p class="alert warning" role="status">
+        {{ reviewCount() }} {{ reviewCount() === 1 ? 'field needs' : 'fields need' }} review before
+        this policy is relied on. Check each highlighted value against its source.
+      </p>
+    }
+
+    <app-fact-table caption="Policy" [rows]="headerRows()" />
+    <app-fact-table caption="Coverage" [rows]="coverageRows()" />
+    <app-fact-table caption="Eligibility" [rows]="eligibilityRows()" />
+  }
+} @else {
+  <p class="muted" aria-live="polite">Loading policy…</p>
+}

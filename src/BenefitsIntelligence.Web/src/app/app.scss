@@ -1,0 +1,106 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 1.25rem;
+  padding: 0.6rem 0.6rem 0.6rem 1.25rem;
+  background: var(--white);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--forest);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mark {
+  width: 2rem;
+  height: 2rem;
+
+  rect {
+    fill: var(--forest);
+  }
+
+  .page {
+    fill: var(--white);
+  }
+
+  .tick {
+    fill: none;
+    stroke: var(--leaf);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+
+  a:not(.button) {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding-block: 0.25rem;
+    border-bottom: 2px solid transparent;
+
+    &:hover,
+    &.active {
+      color: var(--forest);
+      border-bottom-color: var(--leaf);
+    }
+  }
+}
+
+main {
+  padding-block: 2rem 3rem;
+}
+
+footer p {
+  margin: 0;
+  padding: 1.5rem 0 2.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    gap: 0.75rem;
+    padding-left: 0.9rem;
+  }
+
+  .brand {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  // The brand already links to the policy list.
+  nav a:not(.button) {
+    display: none;
+  }
+
+  nav .button {
+    padding: 0.55rem 1rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

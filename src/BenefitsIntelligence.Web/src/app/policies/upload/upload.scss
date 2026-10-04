@@ -1,0 +1,87 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+}
+
+.dropzone {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+  place-items: center;
+  padding: 2.25rem 1rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--cream-light);
+  text-align: center;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+
+  &:hover,
+  &.dragging {
+    border-color: var(--leaf-text);
+    background: var(--success-surface);
+  }
+
+  &.chosen {
+    border-style: solid;
+    border-color: var(--leaf-text);
+  }
+
+  &:focus-within {
+    outline: 3px solid var(--leaf);
+    outline-offset: 2px;
+  }
+
+  // Visually hidden but still focusable and announced, so the zone works from the keyboard.
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+}
+
+.next {
+  padding: 1.75rem;
+  border-radius: var(--radius);
+  background: var(--forest-deep);
+  color: var(--white);
+
+  ol {
+    margin: 1rem 0;
+    padding-left: 1.2rem;
+
+    li {
+      margin-bottom: 0.6rem;
+      color: rgb(255 255 255 / 85%);
+    }
+
+    li::marker {
+      color: var(--leaf);
+      font-weight: 700;
+    }
+  }
+
+  .muted {
+    margin: 0;
+    color: rgb(255 255 255 / 60%);
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -75,6 +75,15 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  web:
+    profiles: ["app"]
+    build:
+      context: src/BenefitsIntelligence.Web
+    ports:
+      - "8081:8080"
+    depends_on:
+      - api
+
 volumes:
   rabbitmq-data:
   mssql-data:

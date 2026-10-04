@@ -1,0 +1,48 @@
+<table class="facts">
+  <caption>
+    {{
+      caption()
+    }}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Field</th>
+      <th scope="col">Value</th>
+      <th scope="col" class="confidence">Confidence</th>
+      <th scope="col">Source</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (row of rows(); track row.label) {
+      <tr [class.needs-review]="row.assessment.needsReview">
+        <th scope="row">{{ row.label }}</th>
+        <td>
+          <span class="value">{{ row.value }}</span>
+          @if (row.assessment.needsReview) {
+            <ul class="reasons" aria-label="Needs review">
+              @for (reason of row.assessment.reviewReasons; track reason) {
+                <li>{{ reasonLabels[reason] }}</li>
+              }
+            </ul>
+          }
+        </td>
+        <td class="confidence">
+          <span
+            class="confidence-pill"
+            [class.low]="row.assessment.reviewReasons.includes('LowConfidence')"
+          >
+            {{ row.assessment.confidence | percent }}
+          </span>
+        </td>
+        <td>
+          @if (row.assessment.evidence; as evidence) {
+            <span class="page">{{ pages(evidence) }}</span>
+            <q>{{ evidence.quote }}</q>
+          } @else {
+            <span class="muted">No source</span>
+          }
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

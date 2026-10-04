@@ -1,0 +1,105 @@
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Policy document analysis</p>
+    <h1>Turn policy documents into benefits data you can trust</h1>
+    <p class="lead">
+      Upload an insurer's policy document and every key term is pulled out for you: premiums,
+      excesses, what is covered and who is eligible. Each value links back to the exact page and
+      passage it came from, and anything unclear is flagged for a person to check.
+    </p>
+    <a class="button accent" routerLink="/policies/new">Upload a policy</a>
+  </div>
+
+  <ol class="steps">
+    <li>
+      <span class="step-number">1</span>
+      <div>
+        <strong>Upload</strong>
+        <p>Add a policy PDF from any provider.</p>
+      </div>
+    </li>
+    <li>
+      <span class="step-number">2</span>
+      <div>
+        <strong>Extract with evidence</strong>
+        <p>Each fact is read from the document and checked against its source.</p>
+      </div>
+    </li>
+    <li>
+      <span class="step-number">3</span>
+      <div>
+        <strong>Review</strong>
+        <p>Anything ambiguous or unsupported is highlighted, never guessed.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+@if (loadFailed()) {
+  <p class="alert danger" role="alert">
+    Policies could not be loaded. Check that the API is running.
+  </p>
+} @else if (policies(); as policies) {
+  <dl class="stats">
+    <div>
+      <dt>Policies</dt>
+      <dd>{{ counts().total }}</dd>
+    </div>
+    <div>
+      <dt>Processing</dt>
+      <dd>{{ counts().processing }}</dd>
+    </div>
+    <div [class.attention]="counts().needsReview > 0">
+      <dt>Needs review</dt>
+      <dd>{{ counts().needsReview }}</dd>
+    </div>
+  </dl>
+
+  @if (policies.length === 0) {
+    <section class="empty">
+      <p>No policies have been uploaded yet.</p>
+      <a class="button" routerLink="/policies/new">Upload the first policy</a>
+    </section>
+  } @else {
+    <table>
+      <caption>
+        Policies
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Policy</th>
+          <th scope="col">Provider</th>
+          <th scope="col">Scheme</th>
+          <th scope="col" class="numeric">Excess</th>
+          <th scope="col">Status</th>
+          <th scope="col">Last updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (policy of policies; track policy.id) {
+          <tr>
+            <th scope="row">
+              <a [routerLink]="['/policies', policy.id]">{{ policy.name }}</a>
+              <span class="file-name">{{ policy.fileName }}</span>
+            </th>
+            <td>{{ policy.provider ?? '—' }}</td>
+            <td>{{ policy.schemeName ?? '—' }}</td>
+            <td class="numeric">
+              {{
+                policy.annualExcess === null
+                  ? '—'
+                  : (policy.annualExcess | currency: 'GBP' : 'symbol' : '1.0-2')
+              }}
+            </td>
+            <td>
+              <app-status-badge [status]="policy.status" [needsReview]="policy.needsReview" />
+            </td>
+            <td class="muted">{{ policy.statusUpdatedAt | date: 'd MMM y, HH:mm' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+} @else {
+  <p class="muted" aria-live="polite">Loading policies…</p>
+}

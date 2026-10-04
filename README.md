@@ -8,6 +8,7 @@ Policy PDFs are uploaded through an ASP.NET Core API and processed asynchronousl
 
 | Component | Technology | Responsibility |
 | --- | --- | --- |
+| `src/BenefitsIntelligence.Web` | Angular 21 | Upload, processing status and evidence-backed policy detail |
 | `src/BenefitsIntelligence.Api` | ASP.NET Core (.NET 10) | Public API, authentication, orchestration |
 | `src/BenefitsIntelligence.Application` | .NET class library | Use cases |
 | `src/BenefitsIntelligence.Domain` | .NET class library | Domain model and deterministic rules |
@@ -23,6 +24,7 @@ Dependencies point inwards: `Api → Application → Domain`, with `Infrastructu
 - [.NET SDK](https://dotnet.microsoft.com/download) (version pinned in `global.json`)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/), which also provisions the pinned Python version
+- [Node.js](https://nodejs.org/) 22.12 or later, for the web front end
 
 ## Getting started
 
@@ -34,7 +36,7 @@ Copy-Item .env.example .env
 
 ### Run everything in Docker
 
-Builds and starts the API, the processing worker, RabbitMQ and SQL Server. The database schema is created on first start.
+Builds and starts the web front end, the API, the processing worker, RabbitMQ and SQL Server. The database schema is created on first start.
 
 ```powershell
 docker compose --profile app up --build
@@ -42,11 +44,12 @@ docker compose --profile app up --build
 
 | Service | Address |
 | --- | --- |
+| Web front end | http://localhost:8081 |
 | API reference (Scalar) | http://localhost:8080/scalar |
 | RabbitMQ management UI | http://localhost:15672 |
 | SQL Server | `localhost,1433` (login `sa`) |
 
-The API and worker share uploaded documents through the `documents` volume, mounted at `/data` in both containers.
+The API and worker share uploaded documents through the `documents` volume, mounted at `/data` in both containers. The front end is served by nginx, which also proxies `/api` to the API, so the browser talks to a single origin and the API needs no CORS configuration.
 
 ### Develop locally
 
@@ -73,6 +76,16 @@ uv sync
 uv run policy-worker
 ```
 
+**Web front end** (proxies `/api` to the API on port 5209, see `src/proxy.conf.json`):
+
+```powershell
+cd src/BenefitsIntelligence.Web
+npm install
+npm start
+```
+
+The app is served at http://localhost:4200.
+
 ### Tests
 
 ```powershell
@@ -80,19 +93,21 @@ dotnet test
 cd src/python
 uv run pytest
 uv run ruff check .
+cd ../BenefitsIntelligence.Web
+npm test
 ```
 
 `uv run pytest -m live` runs extraction against the sample policies using the OpenAI key in `.env`. These tests call the API, so they are excluded from the default run.
 
 ### Trying it out
 
-Upload a PDF from Scalar (`POST /api/policies`) or with curl:
+Upload a PDF from the web front end, from Scalar (`POST /api/policies`) or with curl:
 
 ```powershell
 curl.exe -X POST http://localhost:8080/api/policies -F "name=Current policy" -F "file=@CurrentHealthPolicy.pdf;type=application/pdf"
 ```
 
-The response is `202 Accepted` with the policy and correlation IDs. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document, followed by every extracted fact with its confidence, the page and quote it was read from, and whether it needs review.
+The response is `202 Accepted` with the policy and correlation IDs. The policy page in the front end refreshes itself until processing finishes. `GET /api/policies/{id}` shows the processing status moving to `Completed` once the worker has handled the document, followed by every extracted fact with its confidence, the page and quote it was read from, and whether it needs review.
 
 ## Design decisions
 
