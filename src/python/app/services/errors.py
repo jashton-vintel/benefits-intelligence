@@ -10,3 +10,7 @@ class DocumentProcessingError(Exception):
 
 class InvalidDocumentError(DocumentProcessingError):
     code = "INVALID_DOCUMENT"
+
+
+class DocumentNotFoundError(DocumentProcessingError):
+    code = "DOCUMENT_NOT_FOUND"

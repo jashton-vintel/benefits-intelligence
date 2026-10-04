@@ -38,11 +38,27 @@ public class MessageContractTests
         Assert.Equal(JsonValueKind.Object, message.Extraction.ValueKind);
     }
 
+    [Fact]
+    public void ProcessPolicyFailedReadsSharedFixture()
+    {
+        var message = Deserialize<ProcessPolicyFailed>("process_failed.json");
+
+        Assert.Equal(Guid.Parse("4c2e8f1a-6b3d-4e9f-a1c7-5d8b2f0e6a93"), message.MessageId);
+        Assert.Equal(FixtureCorrelationId, message.CorrelationId);
+        Assert.Equal(MessageSerialization.SchemaVersion, message.SchemaVersion);
+        Assert.Equal(FixtureTenantId, message.TenantId);
+        Assert.Equal(FixturePolicyId, message.PolicyId);
+        Assert.Equal("failed", message.Status);
+        Assert.Equal("INVALID_DOCUMENT", message.ErrorCode);
+        Assert.Equal("The PDF contains no extractable text.", message.ErrorMessage);
+    }
+
     // Compares property names rather than raw JSON: .NET writes UTC offsets as "+00:00" where the
     // fixture uses "Z", which both sides accept. Value fidelity is covered by the read tests above.
     [Theory]
     [InlineData("process_requested.json", typeof(ProcessPolicyRequested))]
     [InlineData("process_completed.json", typeof(ProcessPolicyCompleted))]
+    [InlineData("process_failed.json", typeof(ProcessPolicyFailed))]
     public void SerializedPropertiesMatchSharedFixture(string fixture, Type messageType)
     {
         var json = ReadFixture(fixture);

@@ -86,6 +86,65 @@ public class ProcessingResultHandlerTests
             () => _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task FailureMarksJobFailedWithReasonAndSaves()
+    {
+        ProcessingJob job = QueuedJob();
+
+        ProcessingResultOutcome outcome = await _handler.HandleFailedAsync(FailureFor(job), CancellationToken.None);
+
+        Assert.Equal(ProcessingResultOutcome.Recorded, outcome);
+        Assert.Equal(ProcessingStatus.Failed, job.Status);
+        Assert.Equal("INVALID_DOCUMENT", job.FailureCode);
+        Assert.Equal("The PDF is password protected.", job.FailureMessage);
+        Assert.Equal(1, _jobs.SaveCount);
+    }
+
+    [Fact]
+    public async Task DuplicateFailureIsAcknowledgedWithoutSaving()
+    {
+        ProcessingJob job = QueuedJob();
+        ProcessPolicyFailed failure = FailureFor(job);
+        await _handler.HandleFailedAsync(failure, CancellationToken.None);
+
+        ProcessingResultOutcome outcome = await _handler.HandleFailedAsync(failure, CancellationToken.None);
+
+        Assert.Equal(ProcessingResultOutcome.AlreadyRecorded, outcome);
+        Assert.Equal(1, _jobs.SaveCount);
+    }
+
+    [Fact]
+    public async Task FailureForCompletedJobIsRejectedByDomain()
+    {
+        ProcessingJob job = QueuedJob();
+        job.MarkCompleted(DateTimeOffset.UtcNow);
+
+        await Assert.ThrowsAsync<InvalidStatusTransitionException>(
+            () => _handler.HandleFailedAsync(FailureFor(job), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task OverlongFailureReasonIsTruncatedToStoredLength()
+    {
+        ProcessingJob job = QueuedJob();
+        ProcessPolicyFailed failure = FailureFor(job) with { ErrorMessage = new string('x', 5000) };
+
+        await _handler.HandleFailedAsync(failure, CancellationToken.None);
+
+        Assert.Equal(ProcessingResultHandler.MaxFailureMessageLength, job.FailureMessage!.Length);
+    }
+
+    private static ProcessPolicyFailed FailureFor(ProcessingJob job) =>
+        new(
+            MessageId: Guid.NewGuid(),
+            CorrelationId: job.CorrelationId,
+            SchemaVersion: MessageSerialization.SchemaVersion,
+            TenantId: Guid.NewGuid(),
+            PolicyId: job.PolicyId,
+            Status: "failed",
+            ErrorCode: "INVALID_DOCUMENT",
+            ErrorMessage: "The PDF is password protected.");
+
     private ProcessingJob QueuedJob()
     {
         ProcessingJob job = ProcessingJob.Create(Guid.NewGuid(), DateTimeOffset.UtcNow);

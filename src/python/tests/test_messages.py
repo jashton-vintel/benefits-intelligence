@@ -5,7 +5,11 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from app.models.messages import ProcessPolicyCompleted, ProcessPolicyRequested
+from app.models.messages import (
+    ProcessPolicyCompleted,
+    ProcessPolicyFailed,
+    ProcessPolicyRequested,
+)
 
 FIXTURES = Path(__file__).resolve().parents[3] / "contracts" / "fixtures"
 
@@ -19,6 +23,7 @@ def read_fixture(name: str) -> str:
     [
         ("process_requested.json", ProcessPolicyRequested),
         ("process_completed.json", ProcessPolicyCompleted),
+        ("process_failed.json", ProcessPolicyFailed),
     ],
 )
 def test_contract_fixture_round_trips(fixture: str, model: type[BaseModel]) -> None:

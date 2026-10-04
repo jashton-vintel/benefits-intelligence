@@ -12,12 +12,14 @@ using RabbitMQ.Client.Events;
 
 namespace BenefitsIntelligence.Infrastructure.Messaging;
 
-internal sealed partial class ProcessingCompletedConsumer(
+internal sealed partial class ProcessingResultConsumer(
     RabbitMqConnection connection,
     IServiceScopeFactory scopeFactory,
-    ILogger<ProcessingCompletedConsumer> logger) : BackgroundService
+    ILogger<ProcessingResultConsumer> logger) : BackgroundService
 {
     private const ushort PrefetchCount = 10;
+
+    private static readonly string[] ResultQueues = [RabbitMqTopology.ProcessedQueue, RabbitMqTopology.FailedQueue];
 
     private enum Settlement
     {
@@ -40,13 +42,14 @@ internal sealed partial class ProcessingCompletedConsumer(
 
         await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: PrefetchCount, global: false, stoppingToken);
 
-        AsyncEventingBasicConsumer consumer = new(channel);
+        foreach (string queue in ResultQueues)
+        {
+            AsyncEventingBasicConsumer consumer = new(channel);
+            consumer.ReceivedAsync += (_, delivery) => HandleAsync(channel, delivery);
 
-        consumer.ReceivedAsync += (_, delivery) => HandleAsync(channel, delivery);
-
-        await channel.BasicConsumeAsync(RabbitMqTopology.ProcessedQueue, autoAck: false, consumer, stoppingToken);
-
-        LogConsuming(RabbitMqTopology.ProcessedQueue);
+            await channel.BasicConsumeAsync(queue, autoAck: false, consumer, stoppingToken);
+            LogConsuming(queue);
+        }
 
         try
         {
@@ -83,28 +86,50 @@ internal sealed partial class ProcessingCompletedConsumer(
 
     private async Task<Settlement> ProcessAsync(BasicDeliverEventArgs delivery)
     {
-        ProcessPolicyCompleted message =
-            JsonSerializer.Deserialize<ProcessPolicyCompleted>(delivery.Body.Span, MessageSerialization.Options)
-            ?? throw new JsonException("Message body was null.");
-
-        using IDisposable? policyScope = logger.BeginScope(new Dictionary<string, object?> { ["policy_id"] = message.PolicyId });
-
         // Scoped services (DbContext in particular) must not outlive a single message.
         await using AsyncServiceScope services = scopeFactory.CreateAsyncScope();
         ProcessingResultHandler handler = services.ServiceProvider.GetRequiredService<ProcessingResultHandler>();
 
-        ProcessingResultOutcome outcome = await handler.HandleCompletedAsync(message, delivery.CancellationToken);
+        switch (delivery.RoutingKey)
+        {
+            case RabbitMqTopology.ProcessCompleted:
+            {
+                ProcessPolicyCompleted message = Deserialize<ProcessPolicyCompleted>(delivery);
+                using IDisposable? policyScope = BeginPolicyScope(message.PolicyId);
 
+                ProcessingResultOutcome outcome = await handler.HandleCompletedAsync(message, delivery.CancellationToken);
+
+                return ToSettlement(outcome, message.PolicyId, () => LogCompleted(message.PolicyId));
+            }
+
+            case RabbitMqTopology.ProcessFailed:
+            {
+                ProcessPolicyFailed message = Deserialize<ProcessPolicyFailed>(delivery);
+                using IDisposable? policyScope = BeginPolicyScope(message.PolicyId);
+
+                ProcessingResultOutcome outcome = await handler.HandleFailedAsync(message, delivery.CancellationToken);
+
+                return ToSettlement(outcome, message.PolicyId, () => LogPolicyFailed(message.PolicyId, message.ErrorCode, message.ErrorMessage));
+            }
+
+            default:
+                LogUnexpectedRoutingKey(delivery.RoutingKey);
+                return Settlement.Reject;
+        }
+    }
+
+    private Settlement ToSettlement(ProcessingResultOutcome outcome, Guid policyId, Action logRecorded)
+    {
         switch (outcome)
         {
             case ProcessingResultOutcome.Recorded:
-                LogCompleted(message.PolicyId);
+                logRecorded();
                 return Settlement.Ack;
             case ProcessingResultOutcome.AlreadyRecorded:
-                LogDuplicate(message.PolicyId);
+                LogDuplicate(policyId);
                 return Settlement.Ack;
             default:
-                LogNoMatchingJob(message.PolicyId);
+                LogNoMatchingJob(policyId);
                 return Settlement.Reject;
         }
     }
@@ -130,17 +155,29 @@ internal sealed partial class ProcessingCompletedConsumer(
         }
     }
 
+    private static T Deserialize<T>(BasicDeliverEventArgs delivery) =>
+        JsonSerializer.Deserialize<T>(delivery.Body.Span, MessageSerialization.Options)
+        ?? throw new JsonException("Message body was null.");
+
+    private IDisposable? BeginPolicyScope(Guid policyId) => logger.BeginScope(new Dictionary<string, object?> { ["policy_id"] = policyId });
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Consuming from {Queue}")]
     private partial void LogConsuming(string queue);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Policy {PolicyId} processing completed")]
     private partial void LogCompleted(Guid policyId);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Policy {PolicyId} completion already recorded; duplicate delivery ignored")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Policy {PolicyId} processing failed: {ErrorCode} {ErrorMessage}")]
+    private partial void LogPolicyFailed(Guid policyId, string errorCode, string errorMessage);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Policy {PolicyId} result already recorded; duplicate delivery ignored")]
     private partial void LogDuplicate(Guid policyId);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "No processing job matches completion for policy {PolicyId}; rejected")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No processing job matches result for policy {PolicyId}; rejected")]
     private partial void LogNoMatchingJob(Guid policyId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Unexpected routing key {RoutingKey}; rejected")]
+    private partial void LogUnexpectedRoutingKey(string routingKey);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Transient failure handling message; requeued for redelivery")]
     private partial void LogTransientFailure(Exception exception);

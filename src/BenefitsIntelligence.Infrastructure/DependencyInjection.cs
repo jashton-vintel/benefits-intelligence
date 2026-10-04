@@ -62,7 +62,7 @@ public static class DependencyInjection
 
         services.AddSingleton<RabbitMqConnection>();
         services.AddHostedService<RabbitMqTopologyInitializer>();
-        services.AddHostedService<ProcessingCompletedConsumer>();
+        services.AddHostedService<ProcessingResultConsumer>();
         services.AddSingleton<IProcessingRequestPublisher, RabbitMqProcessingRequestPublisher>();
 
         return services;

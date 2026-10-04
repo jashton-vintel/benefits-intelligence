@@ -5,16 +5,35 @@ namespace BenefitsIntelligence.Application.Processing;
 
 public sealed class ProcessingResultHandler(IProcessingJobRepository jobs, TimeProvider timeProvider)
 {
-    public async Task<ProcessingResultOutcome> HandleCompletedAsync(ProcessPolicyCompleted message, CancellationToken cancellationToken)
-    {
-        ProcessingJob? job = await jobs.FindByCorrelationIdAsync(message.CorrelationId, cancellationToken);
+    public const int MaxFailureMessageLength = 2000;
 
-        if (job is null || job.PolicyId != message.PolicyId)
+    public Task<ProcessingResultOutcome> HandleCompletedAsync(ProcessPolicyCompleted message, CancellationToken cancellationToken) =>
+        RecordAsync(message.CorrelationId, message.PolicyId, job => job.MarkCompleted(timeProvider.GetUtcNow()), cancellationToken);
+
+    public Task<ProcessingResultOutcome> HandleFailedAsync(ProcessPolicyFailed message, CancellationToken cancellationToken)
+    {
+        // The reason comes from another service; keep it within what the job can store.
+        string reason = message.ErrorMessage.Length <= MaxFailureMessageLength
+            ? message.ErrorMessage
+            : message.ErrorMessage[..MaxFailureMessageLength];
+
+        return RecordAsync(message.CorrelationId, message.PolicyId, job => job.MarkFailed(message.ErrorCode, reason, timeProvider.GetUtcNow()), cancellationToken);
+    }
+
+    private async Task<ProcessingResultOutcome> RecordAsync(
+        Guid correlationId,
+        Guid policyId,
+        Func<ProcessingJob, bool> record,
+        CancellationToken cancellationToken)
+    {
+        ProcessingJob? job = await jobs.FindByCorrelationIdAsync(correlationId, cancellationToken);
+
+        if (job is null || job.PolicyId != policyId)
         {
             return ProcessingResultOutcome.NoMatchingJob;
         }
 
-        if (!job.MarkCompleted(timeProvider.GetUtcNow()))
+        if (!record(job))
         {
             return ProcessingResultOutcome.AlreadyRecorded;
         }

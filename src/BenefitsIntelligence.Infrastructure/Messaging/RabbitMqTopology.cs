@@ -7,8 +7,10 @@ internal static class RabbitMqTopology
     public const string Exchange = "benefits.events";
     public const string ProcessingQueue = "policy.processing";
     public const string ProcessedQueue = "policy.processed";
+    public const string FailedQueue = "policy.failed";
     public const string ProcessRequested = "policy.process.requested";
     public const string ProcessCompleted = "policy.process.completed";
+    public const string ProcessFailed = "policy.process.failed";
 
     // Must match the Python worker's declarations exactly.. a mismatch fails with PRECONDITION_FAILED.
     public static async Task DeclareAsync(IChannel channel, CancellationToken cancellationToken)
@@ -17,6 +19,7 @@ internal static class RabbitMqTopology
 
         await DeclareBoundQueueAsync(channel, ProcessingQueue, ProcessRequested, cancellationToken);
         await DeclareBoundQueueAsync(channel, ProcessedQueue, ProcessCompleted, cancellationToken);
+        await DeclareBoundQueueAsync(channel, FailedQueue, ProcessFailed, cancellationToken);
     }
 
     private static async Task DeclareBoundQueueAsync(IChannel channel, string queue, string routingKey, CancellationToken cancellationToken)
