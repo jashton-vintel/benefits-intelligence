@@ -4,6 +4,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   LOCALE_ID,
@@ -13,6 +14,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, EMPTY, switchMap } from 'rxjs';
 
+import { AppTitleStrategy } from '../../app-title-strategy';
 import { pollWhile } from '../../shared/polling';
 import { AskPanel } from '../ask-panel/ask-panel';
 import { coverageRows, eligibilityRows, headerRows } from '../fact-table/fact-rows';
@@ -60,6 +62,16 @@ export class PolicyPage {
       ),
     ),
   );
+
+  constructor() {
+    const titles = inject(AppTitleStrategy);
+    effect(() => {
+      const policy = this.policy();
+      if (policy) {
+        titles.setPageTitle(policy.name);
+      }
+    });
+  }
 
   private readonly extraction = computed(() => this.policy()?.extraction ?? null);
 

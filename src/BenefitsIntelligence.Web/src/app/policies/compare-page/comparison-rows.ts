@@ -29,6 +29,8 @@ const HEADER_LABELS: Record<string, string> = {
   dependants_included: 'Dependants paid for by employer',
 };
 
+const SERVICE_MONTHS = 'eligibility.minimum_service_months';
+
 const COVERAGE_KEYS: Record<string, CoverageType> = {
   inpatient: 'Inpatient',
   outpatient: 'Outpatient',
@@ -107,6 +109,11 @@ function formatValue(
     return noRequirement ? 'No requirement' : 'Not stated';
   }
 
+  if (difference.field === SERVICE_MONTHS) {
+    const count = Number(value);
+    return count === 0 ? 'None' : months(count);
+  }
+
   switch (difference.kind) {
     case 'Money':
       return money(Number(value), locale);
@@ -130,8 +137,11 @@ function describeChange(difference: FieldDifference, locale: string): string {
       }
       const sign = difference.delta > 0 ? '+' : '−';
       const size = Math.abs(difference.delta);
-      return difference.kind === 'Money'
-        ? `${sign}${money(size, locale)}`
+      if (difference.kind === 'Money') {
+        return `${sign}${money(size, locale)}`;
+      }
+      return difference.field === SERVICE_MONTHS
+        ? `${sign}${months(size)}`
         : `${sign}${formatNumber(size, locale, '1.0-0')}`;
     }
     case 'Unknown':
@@ -139,6 +149,10 @@ function describeChange(difference: FieldDifference, locale: string): string {
     default:
       return difference.change;
   }
+}
+
+function months(count: number): string {
+  return `${count} ${count === 1 ? 'month' : 'months'}`;
 }
 
 function money(amount: number, locale: string): string {

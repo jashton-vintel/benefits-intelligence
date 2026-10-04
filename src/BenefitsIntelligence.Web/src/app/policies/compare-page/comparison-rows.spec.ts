@@ -97,6 +97,22 @@ describe('comparison rows', () => {
     ]);
   });
 
+  it('shows the service requirement in months', () => {
+    const row = comparisonRow(
+      difference({
+        field: 'eligibility.minimum_service_months',
+        kind: 'Count',
+        current: '3',
+        proposed: '0',
+        delta: -3,
+        change: 'Decreased',
+      }),
+      'en-GB',
+    );
+
+    expect([row.current, row.proposed, row.change]).toEqual(['3 months', 'None', '−3 months']);
+  });
+
   it('labels fields it does not know from their path', () => {
     expect(fieldLabel('coverage.dental.covered')).toBe('Dental: covered');
     expect(fieldLabel('waiting_period')).toBe('Waiting period');

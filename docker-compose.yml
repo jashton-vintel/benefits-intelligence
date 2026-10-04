@@ -10,7 +10,8 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # Checks the listeners accept connections, not just that the node is running.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,6 +38,7 @@ services:
   # the infrastructure for running the API and worker from the IDE without competing consumers.
   api:
     profiles: ["app"]
+    restart: on-failure
     build:
       context: .
       dockerfile: src/BenefitsIntelligence.Api/Dockerfile
@@ -62,6 +64,7 @@ services:
 
   worker:
     profiles: ["app"]
+    restart: on-failure
     build:
       context: src/python
     environment:
@@ -81,6 +84,7 @@ services:
   # No ports are published: only services on the compose network (the API) can reach it.
   ai-api:
     profiles: ["app"]
+    restart: on-failure
     build:
       context: src/python
     command: ["policy-api"]
@@ -93,6 +97,7 @@ services:
 
   web:
     profiles: ["app"]
+    restart: on-failure
     build:
       context: src/BenefitsIntelligence.Web
     ports:

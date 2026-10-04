@@ -7,8 +7,9 @@ import {
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, TitleStrategy, withComponentInputBinding } from '@angular/router';
 
+import { AppTitleStrategy } from './app-title-strategy';
 import { routes } from './app.routes';
 
 registerLocaleData(localeEnGb);
@@ -20,5 +21,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
     { provide: LOCALE_ID, useValue: 'en-GB' },
     { provide: DEFAULT_CURRENCY_CODE, useValue: 'GBP' },
+    { provide: TitleStrategy, useExisting: AppTitleStrategy },
   ],
 };

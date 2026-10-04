@@ -496,3 +496,6 @@ CLAUDE.local.md
 
 # Local document store (uploaded PDFs)
 /data/
+
+# Browser automation output
+.playwright-mcp/

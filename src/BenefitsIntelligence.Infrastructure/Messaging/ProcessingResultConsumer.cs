@@ -159,7 +159,7 @@ internal sealed partial class ProcessingResultConsumer(
         JsonSerializer.Deserialize<T>(delivery.Body.Span, MessageSerialization.Options)
         ?? throw new JsonException("Message body was null.");
 
-    private IDisposable? BeginPolicyScope(Guid policyId) => logger.BeginScope(new Dictionary<string, object?> { ["policy_id"] = policyId });
+    private IDisposable? BeginPolicyScope(Guid policyId) => logger.BeginScope(new LogFields(KeyValuePair.Create<string, object?>("policy_id", policyId)));
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Consuming from {Queue}")]
     private partial void LogConsuming(string queue);
