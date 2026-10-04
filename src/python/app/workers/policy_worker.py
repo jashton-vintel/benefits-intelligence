@@ -4,37 +4,48 @@ from pathlib import Path
 from uuid import uuid4
 
 from aio_pika.abc import AbstractExchange, AbstractIncomingMessage
+from openai import AsyncOpenAI
 
-from app.config import load_settings
+from app.config import Settings, load_settings
 from app.logging_config import configure_logging, log_context
 from app.messaging.publisher import publish_completed, publish_failed
 from app.messaging.rabbit_connection import connect
 from app.messaging.topology import declare_topology
+from app.models.extraction import DocumentSummary
 from app.models.messages import ProcessPolicyCompleted, ProcessPolicyFailed, ProcessPolicyRequested
 from app.services.document_paths import resolve_document_path
 from app.services.document_preparation import prepare_document
 from app.services.errors import DocumentProcessingError
+from app.services.llm_extractor import OpenAIPolicyExtractor, PolicyExtractor
 
 logger = logging.getLogger(__name__)
 
 
 async def handle_process_requested(
-    request: ProcessPolicyRequested, document_root: Path
+    request: ProcessPolicyRequested, document_root: Path, extractor: PolicyExtractor
 ) -> ProcessPolicyCompleted:
     path = resolve_document_path(document_root, request.document_location)
 
     # Parsing is CPU-bound and blocking; running it on the event loop would stall the
     # RabbitMQ connection's heartbeats and every other coroutine until it finished.
     prepared = await asyncio.to_thread(prepare_document, path)
-
     logger.info("Processed %d pages (%d chunks)", prepared.page_count, len(prepared.chunks))
+
+    extraction = await extractor.extract(prepared.chunks)
+    logger.info(
+        "Extracted provider=%s scheme=%s excess=%s",
+        extraction.provider,
+        extraction.scheme_name,
+        extraction.annual_excess,
+    )
 
     return ProcessPolicyCompleted(
         message_id=uuid4(),
         correlation_id=request.correlation_id,
         tenant_id=request.tenant_id,
         policy_id=request.policy_id,
-        extraction={"page_count": prepared.page_count, "chunk_count": len(prepared.chunks)},
+        document=DocumentSummary(page_count=prepared.page_count, chunk_count=len(prepared.chunks)),
+        extraction=extraction,
     )
 
 
@@ -52,7 +63,10 @@ def failure_for(
 
 
 async def on_message(
-    message: AbstractIncomingMessage, exchange: AbstractExchange, document_root: Path
+    message: AbstractIncomingMessage,
+    exchange: AbstractExchange,
+    document_root: Path,
+    extractor: PolicyExtractor,
 ) -> None:
     # IDs come from the AMQP properties rather than the body,
     # so messages that fail to parse are still traceable.
@@ -65,7 +79,7 @@ async def on_message(
                 logger.info("Processing policy %s", request.policy_id)
 
                 try:
-                    completed = await handle_process_requested(request, document_root)
+                    completed = await handle_process_requested(request, document_root, extractor)
                 except DocumentProcessingError as error:
                     # A document that can never be processed is a result, not a delivery
                     # failure: report it so the job is marked failed, then ack the request.
@@ -82,8 +96,23 @@ async def on_message(
             logger.exception("Failed to process message")
 
 
+def create_extractor(settings: Settings) -> OpenAIPolicyExtractor:
+    api_key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else ""
+    if not api_key.strip():
+        raise RuntimeError("OPENAI_API_KEY must be set to run the policy worker.")
+
+    client = AsyncOpenAI(
+        api_key=api_key,
+        timeout=settings.openai_timeout_seconds,
+        max_retries=3,
+    )
+    return OpenAIPolicyExtractor(client, settings.openai_model)
+
+
 async def run() -> None:
     settings = load_settings()
+    extractor = create_extractor(settings)
+    await extractor.verify()
     connection = await connect(settings)
     async with connection:
         channel = await connection.channel()
@@ -95,7 +124,7 @@ async def run() -> None:
         )
         async with queue.iterator() as messages:
             async for message in messages:
-                await on_message(message, exchange, settings.document_root)
+                await on_message(message, exchange, settings.document_root, extractor)
 
 
 def main() -> None:

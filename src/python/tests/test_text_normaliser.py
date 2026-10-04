@@ -8,9 +8,15 @@ def pages(*texts: str) -> list[PageContent]:
     ]
 
 
-def test_replaces_ligatures_and_collapses_whitespace() -> None:
-    assert (
-        normalise_text("Cover is conﬁrmed  for   the\nﬂoor") == "Cover is confirmed for the floor"
+def test_replaces_ligatures_and_collapses_spaces() -> None:
+    assert normalise_text("Cover is conﬁrmed  for   the ﬂoor") == (
+        "Cover is confirmed for the floor"
+    )
+
+
+def test_keeps_one_line_break_between_lines() -> None:
+    assert normalise_text("Corporate Plus  \n\n\n  Group Private Medical Insurance") == (
+        "Corporate Plus\nGroup Private Medical Insurance"
     )
 
 
@@ -39,13 +45,13 @@ def test_removes_running_headers_and_page_numbers() -> None:
         )
     )
 
-    assert document.text == "First page body. Second page body. Third page body."
+    assert document.text == "First page body.\nSecond page body.\nThird page body."
 
 
 def test_keeps_repeated_lines_in_short_documents() -> None:
     document = normalise_document(pages("Acme Health\nIntro.", "Acme Health\nTerms."))
 
-    assert document.text == "Acme Health Intro. Acme Health Terms."
+    assert document.text == "Acme Health\nIntro.\nAcme Health\nTerms."
 
 
 def test_maps_offsets_back_to_pages() -> None:
@@ -69,6 +75,15 @@ def test_locates_quote_spanning_a_page_break() -> None:
 
     assert location is not None
     assert (location.page_start, location.page_end) == (1, 2)
+
+
+def test_locates_quote_written_on_one_line_across_a_line_break() -> None:
+    document = normalise_document(pages("Members may self-\nrefer for\nphysiotherapy."))
+
+    location = document.locate("Members may self-refer for physiotherapy.")
+
+    assert document.text == "Members may self-refer for\nphysiotherapy."
+    assert location is not None
 
 
 def test_locate_returns_none_for_missing_or_empty_quote() -> None:

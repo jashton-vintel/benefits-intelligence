@@ -35,7 +35,8 @@ public class MessageContractTests
         Assert.Equal(FixtureTenantId, message.TenantId);
         Assert.Equal(FixturePolicyId, message.PolicyId);
         Assert.Equal("completed", message.Status);
-        Assert.Equal(JsonValueKind.Object, message.Extraction.ValueKind);
+        Assert.Equal(new DocumentSummary(PageCount: 7, ChunkCount: 8), message.Document);
+        Assert.Equal(new PolicyExtraction("Atlas Healthcare", "Corporate Plus", 100.00m), message.Extraction);
     }
 
     [Fact]

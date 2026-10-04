@@ -1,9 +1,8 @@
-using System.Text.Json;
-
 using BenefitsIntelligence.Application.Messaging;
 using BenefitsIntelligence.Application.Persistence;
 using BenefitsIntelligence.Application.Processing;
 using BenefitsIntelligence.Application.Tests.Fakes;
+using BenefitsIntelligence.Domain.Policies;
 using BenefitsIntelligence.Domain.Processing;
 
 namespace BenefitsIntelligence.Application.Tests.Processing;
@@ -11,6 +10,7 @@ namespace BenefitsIntelligence.Application.Tests.Processing;
 public class ProcessingResultHandlerTests
 {
     private readonly FakeProcessingJobRepository _jobs = new();
+    private readonly Dictionary<Guid, BenefitPolicy> _policies = [];
     private readonly ProcessingResultHandler _handler;
 
     public ProcessingResultHandlerTests()
@@ -28,6 +28,35 @@ public class ProcessingResultHandlerTests
         Assert.Equal(ProcessingResultOutcome.Recorded, outcome);
         Assert.Equal(ProcessingStatus.Completed, job.Status);
         Assert.Equal(1, _jobs.SaveCount);
+    }
+
+    [Fact]
+    public async Task CompletionRecordsExtractionOnThePolicy()
+    {
+        ProcessingJob job = QueuedJob();
+
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        BenefitPolicy policy = _policies[job.PolicyId];
+        Assert.Equal("Atlas Healthcare", policy.Provider);
+        Assert.Equal("Corporate Plus", policy.SchemeName);
+        Assert.Equal(100.00m, policy.AnnualExcess);
+    }
+
+    [Fact]
+    public async Task RedeliveredCompletionDoesNotOverwriteRecordedExtraction()
+    {
+        ProcessingJob job = QueuedJob();
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        ProcessPolicyCompleted redelivered = CompletionFor(job) with
+        {
+            Extraction = new PolicyExtraction("Someone Else", "Other Plan", 999m),
+        };
+        await _handler.HandleCompletedAsync(redelivered, CancellationToken.None);
+
+        Assert.Equal("Atlas Healthcare", _policies[job.PolicyId].Provider);
+        Assert.Equal(100.00m, _policies[job.PolicyId].AnnualExcess);
     }
 
     [Fact]
@@ -147,7 +176,11 @@ public class ProcessingResultHandlerTests
 
     private ProcessingJob QueuedJob()
     {
-        ProcessingJob job = ProcessingJob.Create(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        BenefitPolicy policy = new(Guid.NewGuid(), Guid.NewGuid(), "Current policy", BenefitType.PrivateMedicalInsurance, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        _policies[policy.Id] = policy;
+        _jobs.Add(policy);
+
+        ProcessingJob job = ProcessingJob.Create(policy.Id, DateTimeOffset.UtcNow);
         job.MarkQueued(DateTimeOffset.UtcNow);
         _jobs.Add(job);
         return job;
@@ -161,5 +194,6 @@ public class ProcessingResultHandlerTests
             TenantId: Guid.NewGuid(),
             PolicyId: job.PolicyId,
             Status: "completed",
-            Extraction: JsonDocument.Parse("{}").RootElement);
+            Document: new DocumentSummary(PageCount: 7, ChunkCount: 8),
+            Extraction: new PolicyExtraction("Atlas Healthcare", "Corporate Plus", 100.00m));
 }

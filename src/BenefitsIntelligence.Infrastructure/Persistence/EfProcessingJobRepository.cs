@@ -1,5 +1,6 @@
 using BenefitsIntelligence.Application.Persistence;
 using BenefitsIntelligence.Application.Processing;
+using BenefitsIntelligence.Domain.Policies;
 using BenefitsIntelligence.Domain.Processing;
 
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,9 @@ internal sealed class EfProcessingJobRepository(AppDbContext db) : IProcessingJo
 {
     public Task<ProcessingJob?> FindByCorrelationIdAsync(Guid correlationId, CancellationToken cancellationToken) =>
         db.ProcessingJobs.SingleOrDefaultAsync(j => j.CorrelationId == correlationId, cancellationToken);
+
+    public Task<BenefitPolicy?> FindPolicyAsync(Guid policyId, CancellationToken cancellationToken) =>
+        db.BenefitPolicies.SingleOrDefaultAsync(p => p.Id == policyId, cancellationToken);
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {

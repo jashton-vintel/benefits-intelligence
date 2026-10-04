@@ -42,3 +42,6 @@ def configure_logging(level: int = logging.INFO) -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
     logging.basicConfig(level=level, handlers=[handler], force=True)
+
+    # The OpenAI SDK's HTTP client logs every request at INFO; keep only its warnings.
+    logging.getLogger("httpx2").setLevel(logging.WARNING)

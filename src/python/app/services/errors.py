@@ -14,3 +14,7 @@ class InvalidDocumentError(DocumentProcessingError):
 
 class DocumentNotFoundError(DocumentProcessingError):
     code = "DOCUMENT_NOT_FOUND"
+
+
+class ExtractionFailedError(DocumentProcessingError):
+    code = "EXTRACTION_FAILED"

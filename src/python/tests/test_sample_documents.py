@@ -12,7 +12,7 @@ import pytest
 
 from app.services.document_chunker import chunk_document
 from app.services.pdf_parser import parse_pdf
-from app.services.text_normaliser import NormalisedDocument, normalise_document
+from app.services.text_normaliser import NormalisedDocument, flatten, normalise_document
 
 SAMPLE_DATA = Path(__file__).resolve().parents[3] / "sample-data"
 EXPECTED_FILES = sorted((SAMPLE_DATA / "expected").glob("*.json"))
@@ -58,7 +58,7 @@ def test_every_evidence_quote_falls_within_a_single_chunk(expected_file: Path) -
     chunks = chunk_document(document)
 
     for quote in evidence_quotes(expected):
-        assert any(quote in chunk.text for chunk in chunks), quote
+        assert any(flatten(quote) in flatten(chunk.text) for chunk in chunks), quote
 
 
 def test_dependant_cost_clause_is_recovered_across_the_page_break() -> None:

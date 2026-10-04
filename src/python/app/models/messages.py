@@ -1,8 +1,10 @@
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+
+from app.models.extraction import DocumentSummary, PolicyExtraction
 
 
 class ProcessPolicyRequested(BaseModel):
@@ -27,7 +29,8 @@ class ProcessPolicyCompleted(BaseModel):
     tenant_id: UUID
     policy_id: UUID
     status: Literal["completed"] = "completed"
-    extraction: dict[str, Any] = Field(default_factory=dict)
+    document: DocumentSummary
+    extraction: PolicyExtraction
 
 
 class ProcessPolicyFailed(BaseModel):

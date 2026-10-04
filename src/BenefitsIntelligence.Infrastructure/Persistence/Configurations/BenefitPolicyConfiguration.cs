@@ -17,6 +17,9 @@ internal sealed class BenefitPolicyConfiguration : IEntityTypeConfiguration<Bene
         builder.Property(p => p.BenefitType);
         builder.Property(p => p.DocumentId);
         builder.Property(p => p.CreatedAt);
+        builder.Property(p => p.Provider).HasMaxLength(200);
+        builder.Property(p => p.SchemeName).HasMaxLength(200);
+        builder.Property(p => p.AnnualExcess).HasPrecision(18, 2);
 
         builder.HasOne<Organisation>()
             .WithMany()

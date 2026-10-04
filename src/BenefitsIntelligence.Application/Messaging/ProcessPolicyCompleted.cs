@@ -1,5 +1,3 @@
-﻿using System.Text.Json;
-
 namespace BenefitsIntelligence.Application.Messaging;
 
 public sealed record ProcessPolicyCompleted(
@@ -9,4 +7,5 @@ public sealed record ProcessPolicyCompleted(
     Guid TenantId,
     Guid PolicyId,
     string Status,
-    JsonElement Extraction);
+    DocumentSummary Document,
+    PolicyExtraction Extraction);

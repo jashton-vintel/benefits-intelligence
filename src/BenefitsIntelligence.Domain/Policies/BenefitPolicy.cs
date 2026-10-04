@@ -29,4 +29,22 @@ public sealed class BenefitPolicy
     public Guid DocumentId { get; }
 
     public DateTimeOffset CreatedAt { get; }
+
+    public string? Provider { get; private set; }
+
+    public string? SchemeName { get; private set; }
+
+    public decimal? AnnualExcess { get; private set; }
+
+    public void RecordExtraction(string? provider, string? schemeName, decimal? annualExcess)
+    {
+        if (annualExcess < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(annualExcess), annualExcess, "An excess cannot be negative.");
+        }
+
+        Provider = provider;
+        SchemeName = schemeName;
+        AnnualExcess = annualExcess;
+    }
 }
