@@ -46,6 +46,8 @@
   }
 
   @if (policy.extraction) {
+    <app-ask-panel [policyId]="policy.id" />
+
     @if (reviewCount() > 0) {
       <p class="alert warning" role="status">
         {{ reviewCount() }} {{ reviewCount() === 1 ? 'field needs' : 'fields need' }} review before

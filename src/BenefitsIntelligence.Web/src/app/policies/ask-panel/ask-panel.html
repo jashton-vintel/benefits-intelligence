@@ -1,0 +1,72 @@
+<section class="ask card" aria-labelledby="ask-heading">
+  <header>
+    <h2 id="ask-heading">Ask about this policy</h2>
+    <p class="muted">
+      Answers come only from this policy's own wording and cite the pages they rely on. If the
+      policy does not say, you will be told rather than given a guess.
+    </p>
+  </header>
+
+  <form (submit)="$event.preventDefault(); ask()">
+    <label class="visually-hidden" for="question">Your question</label>
+    <textarea
+      id="question"
+      rows="2"
+      placeholder="For example: how many physiotherapy sessions are covered?"
+      [value]="draft()"
+      [attr.maxlength]="maxLength"
+      (input)="typed($event)"
+      (keydown)="submitOnEnter($event)"
+    ></textarea>
+    <button type="submit" class="button" [disabled]="!canAsk()">
+      {{ asking() ? 'Answering…' : 'Ask' }}
+    </button>
+  </form>
+
+  <div class="suggestions" aria-label="Suggested questions">
+    @for (suggestion of suggestions; track suggestion) {
+      <button type="button" class="suggestion" [disabled]="asking()" (click)="ask(suggestion)">
+        {{ suggestion }}
+      </button>
+    }
+  </div>
+
+  @if (exchanges().length > 0) {
+    <ol class="exchanges" aria-live="polite">
+      @for (exchange of exchanges(); track exchange.id) {
+        <li class="exchange">
+          <p class="question">{{ exchange.question }}</p>
+
+          @switch (exchange.state) {
+            @case ('asking') {
+              <p class="muted thinking">Reading the policy…</p>
+            }
+            @case ('failed') {
+              <p class="error">{{ exchange.error }}</p>
+            }
+            @default {
+              @if (exchange.answer; as answer) {
+                @if (answer.supported) {
+                  <p class="answer">{{ answer.answer }}</p>
+                  <ul class="citations" aria-label="Sources">
+                    @for (citation of answer.citations; track citation.quote) {
+                      <li>
+                        <span class="page">{{ pages(citation) }}</span>
+                        <q>{{ citation.quote }}</q>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="refusal">
+                    <span class="refusal-label">Not stated in this policy</span>
+                    {{ answer.answer }}
+                  </p>
+                }
+              }
+            }
+          }
+        </li>
+      }
+    </ol>
+  }
+</section>

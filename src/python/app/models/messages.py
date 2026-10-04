@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.document import DocumentSummary
+from app.models.document import DocumentSummary, PageContent
 from app.models.policy import PolicyExtraction
 
 
@@ -32,6 +32,8 @@ class ProcessPolicyCompleted(BaseModel):
     status: Literal["completed"] = "completed"
     document: DocumentSummary
     extraction: PolicyExtraction
+    # Raw page text, so the API can keep it for answering questions without Python holding state.
+    pages: list[PageContent] = Field(min_length=1)
 
 
 class ProcessPolicyFailed(BaseModel):

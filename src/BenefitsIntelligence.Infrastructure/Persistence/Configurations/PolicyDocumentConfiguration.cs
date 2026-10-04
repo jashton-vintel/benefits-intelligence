@@ -19,6 +19,12 @@ internal sealed class PolicyDocumentConfiguration : IEntityTypeConfiguration<Pol
         builder.Property(d => d.SizeBytes);
         builder.Property(d => d.UploadedAt);
 
+        builder.HasMany(d => d.Pages)
+            .WithOne()
+            .HasForeignKey(DocumentPageConfiguration.DocumentIdColumn)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasOne<Organisation>()
             .WithMany()
             .HasForeignKey(d => d.OrganisationId)

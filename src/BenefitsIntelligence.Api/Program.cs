@@ -4,6 +4,7 @@ using BenefitsIntelligence.Api.Endpoints;
 using BenefitsIntelligence.Application.Comparison;
 using BenefitsIntelligence.Application.Policies;
 using BenefitsIntelligence.Application.Processing;
+using BenefitsIntelligence.Application.Questions;
 using BenefitsIntelligence.Domain.Policies;
 using BenefitsIntelligence.Infrastructure;
 using BenefitsIntelligence.Infrastructure.Persistence;
@@ -23,6 +24,7 @@ builder.Services.AddSingleton(new ReviewPolicy(
 builder.Services.AddScoped<PolicyUploadService>();
 builder.Services.AddScoped<ProcessingResultHandler>();
 builder.Services.AddScoped<PolicyComparisonService>();
+builder.Services.AddScoped<PolicyQuestionService>();
 
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddDocumentStorage(builder.Configuration);

@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 
 from app.models.comparison import ComparisonSummaryRequest
 from app.services.comparison_facts import describe_comparison
-from app.services.summary_guard import judgement_words, unsupported_numbers
+from app.services.output_guard import judgement_words, unsupported_numbers
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def build_facts_input(lines: list[str]) -> str:
 
 def summary_problems(summary: str, facts: list[str]) -> list[str]:
     problems: list[str] = []
-    if words := judgement_words(summary):
+    if words := judgement_words(summary, facts):
         problems.append(f"judgement words: {', '.join(words)}")
     if numbers := unsupported_numbers(summary, facts):
         problems.append(f"figures not in the comparison: {', '.join(numbers)}")

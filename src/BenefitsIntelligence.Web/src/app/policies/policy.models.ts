@@ -123,3 +123,15 @@ export interface ComparisonReport {
   differences: FieldDifference[];
   summary: string | null;
 }
+
+export interface AnswerCitation {
+  pageStart: number;
+  pageEnd: number;
+  quote: string;
+}
+
+export interface PolicyAnswer {
+  answer: string;
+  supported: boolean;
+  citations: AnswerCitation[];
+}

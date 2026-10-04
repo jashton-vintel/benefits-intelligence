@@ -49,6 +49,7 @@ async def handle_process_requested(
         policy_id=request.policy_id,
         document=DocumentSummary(page_count=prepared.page_count, chunk_count=len(prepared.chunks)),
         extraction=extraction,
+        pages=prepared.pages,
     )
 
 

@@ -3,7 +3,8 @@ using BenefitsIntelligence.Application.Documents;
 using BenefitsIntelligence.Application.Messaging;
 using BenefitsIntelligence.Application.Policies;
 using BenefitsIntelligence.Application.Processing;
-using BenefitsIntelligence.Infrastructure.Comparison;
+using BenefitsIntelligence.Application.Questions;
+using BenefitsIntelligence.Infrastructure.PythonApi;
 using BenefitsIntelligence.Infrastructure.Documents;
 using BenefitsIntelligence.Infrastructure.Messaging;
 using BenefitsIntelligence.Infrastructure.Persistence;
@@ -59,7 +60,7 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(PythonApiOptions.SectionName))
             .Validate(o => o.TimeoutSeconds > 0, "PythonApi:TimeoutSeconds must be positive.");
 
-        services.AddHttpClient<IComparisonSummariser, PythonComparisonSummariser>((provider, client) =>
+        services.AddHttpClient<PythonApiClient>((provider, client) =>
         {
             PythonApiOptions options = provider.GetRequiredService<IOptions<PythonApiOptions>>().Value;
             client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
@@ -69,6 +70,9 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             }
         });
+
+        services.AddTransient<IComparisonSummariser, PythonComparisonSummariser>();
+        services.AddTransient<IPolicyQuestionAnswerer, PythonQuestionAnswerer>();
 
         return services;
     }

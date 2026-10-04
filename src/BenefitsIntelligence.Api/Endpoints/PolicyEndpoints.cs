@@ -1,5 +1,6 @@
 using BenefitsIntelligence.Application.Documents;
 using BenefitsIntelligence.Application.Policies;
+using BenefitsIntelligence.Application.Questions;
 using BenefitsIntelligence.Domain.Policies;
 using BenefitsIntelligence.Infrastructure.Persistence;
 
@@ -26,6 +27,7 @@ internal static class PolicyEndpoints
         policies.MapPost("/", UploadAsync).DisableAntiforgery();
         policies.MapGet("/", ListAsync);
         policies.MapGet("/{id:guid}", GetAsync).WithName(GetPolicyRouteName);
+        policies.MapPost("/{id:guid}/questions", AskAsync);
 
         return app;
     }
@@ -78,6 +80,39 @@ internal static class PolicyEndpoints
         await queries.FindAsync(OrganisationId, id, cancellationToken) is { } policy
             ? Results.Ok(policy)
             : Results.NotFound();
+
+    private static async Task<IResult> AskAsync(
+        Guid id,
+        AskQuestionRequest request,
+        PolicyQuestionService questions,
+        CancellationToken cancellationToken)
+    {
+        string? question = request.Question?.Trim();
+        if (string.IsNullOrEmpty(question) || question.Length > PolicyQuestionService.MaxQuestionLength)
+        {
+            return Invalid("question", $"A question of up to {PolicyQuestionService.MaxQuestionLength} characters is required.");
+        }
+
+        QuestionResult result = await questions.AskAsync(OrganisationId, id, question, cancellationToken);
+
+        return result.Status switch
+        {
+            QuestionStatus.Answered => Results.Ok(result.Answer),
+            QuestionStatus.PolicyNotFound => Results.NotFound(),
+            QuestionStatus.PolicyNotReady => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Policy not ready",
+                detail: "The policy has not finished processing, so questions cannot be answered yet."),
+            QuestionStatus.TextUnavailable => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Policy text unavailable",
+                detail: "This policy was processed before its text was kept for questions. Upload it again to ask about it."),
+            _ => Results.Problem(
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Answers unavailable",
+                detail: "Questions cannot be answered right now. Please try again shortly."),
+        };
+    }
 
     private static IResult Invalid(string field, string message) => Results.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
 

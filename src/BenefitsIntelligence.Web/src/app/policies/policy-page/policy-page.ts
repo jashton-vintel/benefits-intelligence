@@ -14,6 +14,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, EMPTY, switchMap } from 'rxjs';
 
 import { pollWhile } from '../../shared/polling';
+import { AskPanel } from '../ask-panel/ask-panel';
 import { coverageRows, eligibilityRows, headerRows } from '../fact-table/fact-rows';
 import { FactTable } from '../fact-table/fact-table';
 import { BENEFIT_TYPE_LABELS } from '../policy-labels';
@@ -25,7 +26,7 @@ const KEY_FIGURES = ['Provider', 'Scheme', 'Annual premium', 'Annual excess'];
 
 @Component({
   selector: 'app-policy-page',
-  imports: [DatePipe, FactTable, RouterLink, StatusBadge],
+  imports: [AskPanel, DatePipe, FactTable, RouterLink, StatusBadge],
   templateUrl: './policy-page.html',
   styleUrl: './policy-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace BenefitsIntelligence.Infrastructure.Comparison;
+namespace BenefitsIntelligence.Infrastructure.PythonApi;
 
 public sealed class PythonApiOptions
 {

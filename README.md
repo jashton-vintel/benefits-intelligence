@@ -69,6 +69,8 @@ dotnet run --project src/BenefitsIntelligence.Api --launch-profile http
 
 The API listens on http://localhost:5209 (Scalar at `/scalar`). Uploaded documents are written to `data/` at the repository root.
 
+The database is migrated automatically only in Docker. When running locally, apply new migrations after pulling changes with the `dotnet-ef database update` command above.
+
 **Python worker and internal API** (both read `.env` from the repository root; run each in its own terminal):
 
 ```powershell
@@ -130,7 +132,9 @@ The response is `202 Accepted` with the policy and correlation IDs. The policy p
 
 **Comparison.** Two policies are compared field by field in the .NET domain (`PolicyComparer`): amounts and counts as increases or decreases with their size, other values as changed or unchanged, and anything missing on either side as not comparable rather than guessed. Differences that rely on a fact needing review are flagged. The written summary is optional and produced by the internal Python API from the calculated differences, never from the documents. Every figure is formatted in code before the model sees it, and a summary is rejected if it uses evaluative language ("better", "recommend") or any figure not in the comparison. If no summary can be produced, the comparison is returned without one. The UI deliberately shows every change in the same neutral style, since colouring one as good and another as bad would itself be a judgement.
 
-**Queue or HTTP.** Work that takes seconds to minutes, benefits from retries and does not need an immediate answer, such as document processing, goes through RabbitMQ. Requests a user is waiting on and that are quick, such as comparison summaries, use HTTP to the internal API, with a timeout and a fallback.
+**Questions.** Each processed policy keeps its page text in the database, so the internal Python API holds no data of its own: the API checks the caller's organisation and sends the question with that policy's pages. Python rebuilds the document with the same normaliser and chunker used during extraction, ranks passages with BM25, and asks the model for an answer with exact quotes. Every quote is located in the document, which is where the cited pages come from; quotes that cannot be found are dropped. If the policy does not state the answer, or nothing verifiable is left, the response is a fixed refusal rather than a guess. Questions asking for a judgement or advice are answered with what the policy states about the topic, and answers containing evaluative language or figures not in the cited passages are rejected.
+
+**Queue or HTTP.** Work that takes seconds to minutes, benefits from retries and does not need an immediate answer, such as document processing, goes through RabbitMQ. Requests a user is waiting on and that are quick, such as comparison summaries and questions, use HTTP to the internal API, with a timeout and a fallback.
 
 **Sample data.** `sample-data/policies` holds the wording of two synthetic policies, rendered to PDF by `src/python/scripts/render_sample_policies.py`. `sample-data/expected` records the known answers, the evidence for each, and deliberately planted edge cases: conflicting limits, eligibility defined across sections, an ambiguous clause and an embedded prompt-injection attempt. Tests check that every expected evidence quote can be located in the rendered documents.
 

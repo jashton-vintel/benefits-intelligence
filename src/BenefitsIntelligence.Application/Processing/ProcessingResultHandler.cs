@@ -28,6 +28,11 @@ public sealed class ProcessingResultHandler(IProcessingJobRepository jobs, Revie
 
         policy.RecordExtraction(ExtractionMapper.ToFacts(message.Extraction, reviewPolicy));
 
+        PolicyDocument document = await jobs.FindDocumentAsync(policy.DocumentId, cancellationToken)
+            ?? throw new InvalidOperationException($"Document {policy.DocumentId} for policy {policy.Id} does not exist.");
+
+        document.RecordPages(message.Pages.Select(page => new DocumentPage(page.PageNumber, page.Text)));
+
         await jobs.SaveChangesAsync(cancellationToken);
         return ProcessingResultOutcome.Recorded;
     }

@@ -43,6 +43,8 @@ async def test_completion_carries_document_summary_and_extraction(
     assert completed.document.chunk_count == len(fake_extractor.received)
     assert completed.extraction.provider.value == "Atlas Healthcare"
     assert completed.extraction.annual_excess.evidence is not None
+    assert [page.page_number for page in completed.pages] == list(range(1, 8))
+    assert "Atlas Healthcare" in completed.pages[0].text
 
 
 async def test_invalid_document_is_reported_before_extraction(

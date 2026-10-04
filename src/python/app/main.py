@@ -9,6 +9,7 @@ from app.config import ApiSettings, load_api_settings
 from app.logging_config import configure_logging, log_context
 from app.services.comparison_summariser import ComparisonSummariser, OpenAIComparisonSummariser
 from app.services.openai_client import create_openai_client
+from app.services.question_answerer import OpenAIQuestionAnswerer, QuestionAnswerer
 
 CORRELATION_HEADER = "X-Correlation-ID"
 MIN_INTERNAL_KEY_LENGTH = 32
@@ -18,10 +19,14 @@ Lifespan = Callable[[FastAPI], AbstractAsyncContextManager[None]]
 
 
 def create_app(
-    summariser: ComparisonSummariser, internal_api_key: str, lifespan: Lifespan | None = None
+    summariser: ComparisonSummariser,
+    answerer: QuestionAnswerer,
+    internal_api_key: str,
+    lifespan: Lifespan | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Benefits Intelligence AI", lifespan=lifespan)
     app.state.summariser = summariser
+    app.state.answerer = answerer
     app.state.internal_api_key = internal_api_key
 
     @app.middleware("http")
@@ -43,14 +48,19 @@ def build_app(settings: ApiSettings) -> FastAPI:
             f"INTERNAL_API_KEY must be set to at least {MIN_INTERNAL_KEY_LENGTH} characters."
         )
 
-    summariser = OpenAIComparisonSummariser(create_openai_client(settings), settings.openai_model)
+    client = create_openai_client(settings)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
-        await summariser.aclose()
+        await client.close()
 
-    return create_app(summariser, key, lifespan)
+    return create_app(
+        OpenAIComparisonSummariser(client, settings.openai_model),
+        OpenAIQuestionAnswerer(client, settings.openai_model),
+        key,
+        lifespan,
+    )
 
 
 def run() -> None:

@@ -8,4 +8,5 @@ public sealed record ProcessPolicyCompleted(
     Guid PolicyId,
     string Status,
     DocumentSummary Document,
-    PolicyExtraction Extraction);
+    PolicyExtraction Extraction,
+    IReadOnlyList<PageContent> Pages);

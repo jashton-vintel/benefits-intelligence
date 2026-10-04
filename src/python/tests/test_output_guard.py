@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.summary_guard import judgement_words, unsupported_numbers
+from app.services.output_guard import judgement_words, unsupported_numbers
 
 FACTS = [
     "- Annual premium: £120,000 → £108,000 (decreased by £12,000).",
@@ -21,6 +21,28 @@ FACTS = [
 )
 def test_finds_words_that_judge_or_advise(summary: str, words: list[str]) -> None:
     assert judgement_words(summary) == words
+
+
+MENTAL_HEALTH = (
+    "In-patient and day-patient treatment for mental health conditions is covered for up to 28 "
+    "days in each policy year, when recommended by a consultant psychiatrist."
+)
+
+
+@pytest.mark.parametrize(
+    ("answer", "words"),
+    [
+        ("In-patient treatment is covered when recommended by a consultant psychiatrist.", []),
+        ("In-patient treatment is covered when RECOMMENDED BY A CONSULTANT.", []),
+        ("This scheme is recommended for most employers.", ["recommended"]),
+        ("In-patient cover is recommended by a consultant psychiatrist and is better.", ["better"]),
+    ],
+    ids=["policy-wording", "case-insensitive", "own-recommendation", "wording-plus-judgement"],
+)
+def test_words_repeating_the_sources_own_wording_are_not_judgements(
+    answer: str, words: list[str]
+) -> None:
+    assert judgement_words(answer, [MENTAL_HEALTH]) == words
 
 
 def test_accepts_figures_taken_from_the_facts() -> None:

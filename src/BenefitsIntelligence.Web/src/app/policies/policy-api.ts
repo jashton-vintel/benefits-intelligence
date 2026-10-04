@@ -2,7 +2,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ComparisonReport, PolicyDetail, PolicySummary, UploadResult } from './policy.models';
+import {
+  ComparisonReport,
+  PolicyAnswer,
+  PolicyDetail,
+  PolicySummary,
+  UploadResult,
+} from './policy.models';
 
 @Injectable({ providedIn: 'root' })
 export class PolicyApi {
@@ -20,6 +26,10 @@ export class PolicyApi {
   compare(current: string, proposed: string, includeSummary = false): Observable<ComparisonReport> {
     const params = new HttpParams({ fromObject: { current, proposed, includeSummary } });
     return this.http.get<ComparisonReport>('/api/comparisons', { params });
+  }
+
+  ask(id: string, question: string): Observable<PolicyAnswer> {
+    return this.http.post<PolicyAnswer>(`${this.baseUrl}/${id}/questions`, { question });
   }
 
   upload(name: string, file: File): Observable<UploadResult> {

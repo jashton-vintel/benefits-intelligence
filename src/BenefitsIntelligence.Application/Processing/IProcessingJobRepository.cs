@@ -9,5 +9,7 @@ public interface IProcessingJobRepository
 
     Task<BenefitPolicy?> FindPolicyAsync(Guid policyId, CancellationToken cancellationToken);
 
+    Task<PolicyDocument?> FindDocumentAsync(Guid documentId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

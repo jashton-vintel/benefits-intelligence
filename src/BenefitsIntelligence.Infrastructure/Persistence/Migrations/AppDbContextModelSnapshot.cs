@@ -167,6 +167,29 @@ namespace BenefitsIntelligence.Infrastructure.Persistence.Migrations
                     b.ToTable("CoverageItems", (string)null);
                 });
 
+            modelBuilder.Entity("BenefitsIntelligence.Domain.Policies.DocumentPage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PageNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId", "PageNumber")
+                        .IsUnique();
+
+                    b.ToTable("PolicyDocumentPages", (string)null);
+                });
+
             modelBuilder.Entity("BenefitsIntelligence.Domain.Policies.EligibilityRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -372,6 +395,15 @@ namespace BenefitsIntelligence.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("BenefitsIntelligence.Domain.Policies.DocumentPage", b =>
+                {
+                    b.HasOne("BenefitsIntelligence.Domain.Policies.PolicyDocument", null)
+                        .WithMany("Pages")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("BenefitsIntelligence.Domain.Policies.EligibilityRule", b =>
                 {
                     b.HasOne("BenefitsIntelligence.Domain.Policies.BenefitPolicy", null)
@@ -415,6 +447,11 @@ namespace BenefitsIntelligence.Infrastructure.Persistence.Migrations
                     b.Navigation("EligibilityRules");
 
                     b.Navigation("FieldAssessments");
+                });
+
+            modelBuilder.Entity("BenefitsIntelligence.Domain.Policies.PolicyDocument", b =>
+                {
+                    b.Navigation("Pages");
                 });
 #pragma warning restore 612, 618
         }

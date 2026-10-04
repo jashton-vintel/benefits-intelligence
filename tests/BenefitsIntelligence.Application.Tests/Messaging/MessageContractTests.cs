@@ -38,6 +38,8 @@ public class MessageContractTests
         Assert.Equal(FixturePolicyId, message.PolicyId);
         Assert.Equal("completed", message.Status);
         Assert.Equal(new DocumentSummary(PageCount: 5, ChunkCount: 6), message.Document);
+        Assert.Equal([1, 2, 3, 4, 5], message.Pages.Select(p => p.PageNumber));
+        Assert.Contains("NorthStar Health plc", message.Pages[0].Text);
     }
 
     [Fact]

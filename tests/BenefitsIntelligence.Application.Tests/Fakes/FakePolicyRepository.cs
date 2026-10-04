@@ -21,6 +21,8 @@ internal sealed class FakePolicyRepository(CallLog log) : IPolicyRepository
 
     public List<BenefitPolicy> Existing { get; } = [];
 
+    public List<PolicyDocument> Documents { get; } = [];
+
     public void Add(PolicyDocument document, BenefitPolicy policy, ProcessingJob job)
     {
         Document = document;
@@ -30,6 +32,10 @@ internal sealed class FakePolicyRepository(CallLog log) : IPolicyRepository
 
     public Task<BenefitPolicy?> FindWithExtractionAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken) =>
         Task.FromResult(Existing.SingleOrDefault(p => p.OrganisationId == organisationId && p.Id == policyId));
+
+    public Task<IReadOnlyList<DocumentPage>> FindPagesAsync(Guid organisationId, Guid documentId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<DocumentPage>>(
+            Documents.SingleOrDefault(d => d.OrganisationId == organisationId && d.Id == documentId)?.Pages.ToList() ?? []);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {

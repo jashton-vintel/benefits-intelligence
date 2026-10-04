@@ -11,6 +11,7 @@ public class ProcessingResultHandlerTests
 {
     private readonly FakeProcessingJobRepository _jobs = new();
     private readonly Dictionary<Guid, BenefitPolicy> _policies = [];
+    private readonly Dictionary<Guid, PolicyDocument> _documents = [];
     private readonly ProcessingResultHandler _handler;
 
     public ProcessingResultHandlerTests()
@@ -46,6 +47,29 @@ public class ProcessingResultHandlerTests
         Assert.Null(policy.DependantsIncluded);
         Assert.Equal(10, policy.CoverageItems.Single(c => c.Type == CoverageType.Physiotherapy).SessionLimit);
         Assert.Equal("0", policy.EligibilityRules.Single(r => r.Type == EligibilityRuleType.MinimumServiceMonths).Value);
+    }
+
+    [Fact]
+    public async Task CompletionKeepsThePageTextForAnsweringQuestions()
+    {
+        ProcessingJob job = QueuedJob();
+
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        PolicyDocument document = _documents[_policies[job.PolicyId].DocumentId];
+        Assert.Equal([1, 2, 3, 4, 5], document.Pages.Select(p => p.PageNumber));
+        Assert.Contains("NorthStar Health", document.Pages.First().Text);
+    }
+
+    [Fact]
+    public async Task RedeliveredCompletionDoesNotReplaceStoredPages()
+    {
+        ProcessingJob job = QueuedJob();
+        await _handler.HandleCompletedAsync(CompletionFor(job), CancellationToken.None);
+
+        await _handler.HandleCompletedAsync(CompletionFor(job) with { Pages = [new PageContent(1, "Different text")] }, CancellationToken.None);
+
+        Assert.Equal(5, _documents[_policies[job.PolicyId].DocumentId].Pages.Count);
     }
 
     [Fact]
@@ -253,7 +277,11 @@ public class ProcessingResultHandlerTests
 
     private ProcessingJob QueuedJob()
     {
-        BenefitPolicy policy = new(Guid.NewGuid(), Guid.NewGuid(), "Current policy", BenefitType.PrivateMedicalInsurance, Guid.NewGuid(), DateTimeOffset.UtcNow);
+        PolicyDocument document = new(Guid.NewGuid(), Guid.NewGuid(), "policy.pdf", "documents/policy.pdf", "application/pdf", 1024, DateTimeOffset.UtcNow);
+        _documents[document.Id] = document;
+        _jobs.Add(document);
+
+        BenefitPolicy policy = new(Guid.NewGuid(), document.OrganisationId, "Current policy", BenefitType.PrivateMedicalInsurance, document.Id, DateTimeOffset.UtcNow);
         _policies[policy.Id] = policy;
         _jobs.Add(policy);
 

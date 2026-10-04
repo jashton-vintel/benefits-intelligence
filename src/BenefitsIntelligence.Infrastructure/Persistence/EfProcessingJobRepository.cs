@@ -21,6 +21,11 @@ internal sealed class EfProcessingJobRepository(AppDbContext db) : IProcessingJo
             .AsSplitQuery()
             .SingleOrDefaultAsync(p => p.Id == policyId, cancellationToken);
 
+    public Task<PolicyDocument?> FindDocumentAsync(Guid documentId, CancellationToken cancellationToken) =>
+        db.PolicyDocuments
+            .Include(d => d.Pages)
+            .SingleOrDefaultAsync(d => d.Id == documentId, cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try

@@ -25,6 +25,14 @@ internal sealed class EfPolicyRepository(AppDbContext db) : IPolicyRepository
             .AsSplitQuery()
             .SingleOrDefaultAsync(p => p.OrganisationId == organisationId && p.Id == policyId, cancellationToken);
 
+    public async Task<IReadOnlyList<DocumentPage>> FindPagesAsync(Guid organisationId, Guid documentId, CancellationToken cancellationToken) =>
+        await db.PolicyDocuments
+            .AsNoTracking()
+            .Where(d => d.OrganisationId == organisationId && d.Id == documentId)
+            .SelectMany(d => d.Pages)
+            .OrderBy(p => p.PageNumber)
+            .ToListAsync(cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try

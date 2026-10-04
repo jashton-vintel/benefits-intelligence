@@ -10,5 +10,7 @@ public interface IPolicyRepository
     /// <summary>Loads a policy with everything extracted for it, without tracking changes.</summary>
     Task<BenefitPolicy?> FindWithExtractionAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<DocumentPage>> FindPagesAsync(Guid organisationId, Guid documentId, CancellationToken cancellationToken);
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }
