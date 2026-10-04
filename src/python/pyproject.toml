@@ -8,16 +8,19 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "aio-pika>=10.1.0",
+    "fastapi>=0.142.2",
     "ftfy>=6.3.1",
     "openai>=3.24.0",
     "pydantic-settings>=2.6",
     "pymupdf>=1.28.2",
     "rapidfuzz>=3.14.6",
     "tiktoken>=0.14.0",
+    "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "markdown>=3.11",
     "pytest>=8.3",
     "pytest-asyncio>=1.4.0",
@@ -26,6 +29,7 @@ dev = [
 
 [project.scripts]
 policy-worker = "app.workers.policy_worker:main"
+policy-api = "app.main:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

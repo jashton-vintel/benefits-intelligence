@@ -94,3 +94,32 @@ export interface UploadResult {
 export function isInFlight(status: ProcessingStatus): boolean {
   return status === 'Uploaded' || status === 'Queued';
 }
+
+export type ValueKind = 'Text' | 'Money' | 'Date' | 'Flag' | 'Count';
+
+export type Change =
+  'Unchanged' | 'Increased' | 'Decreased' | 'Changed' | 'Added' | 'Removed' | 'Unknown';
+
+export interface PolicyReference {
+  id: string;
+  name: string;
+  provider: string | null;
+  schemeName: string | null;
+}
+
+export interface FieldDifference {
+  field: string;
+  kind: ValueKind;
+  current: string | null;
+  proposed: string | null;
+  delta: number | null;
+  change: Change;
+  needsReview: boolean;
+}
+
+export interface ComparisonReport {
+  current: PolicyReference;
+  proposed: PolicyReference;
+  differences: FieldDifference[];
+  summary: string | null;
+}

@@ -16,6 +16,15 @@ internal sealed class EfPolicyRepository(AppDbContext db) : IPolicyRepository
         db.ProcessingJobs.Add(job);
     }
 
+    public Task<BenefitPolicy?> FindWithExtractionAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken) =>
+        db.BenefitPolicies
+            .AsNoTracking()
+            .Include(p => p.FieldAssessments)
+            .Include(p => p.CoverageItems)
+            .Include(p => p.EligibilityRules)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(p => p.OrganisationId == organisationId && p.Id == policyId, cancellationToken);
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try

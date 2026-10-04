@@ -1,7 +1,9 @@
-﻿using BenefitsIntelligence.Application.Documents;
+﻿using BenefitsIntelligence.Application.Comparison;
+using BenefitsIntelligence.Application.Documents;
 using BenefitsIntelligence.Application.Messaging;
 using BenefitsIntelligence.Application.Policies;
 using BenefitsIntelligence.Application.Processing;
+using BenefitsIntelligence.Infrastructure.Comparison;
 using BenefitsIntelligence.Infrastructure.Documents;
 using BenefitsIntelligence.Infrastructure.Messaging;
 using BenefitsIntelligence.Infrastructure.Persistence;
@@ -46,6 +48,26 @@ public static class DependencyInjection
             IHostEnvironment environment = provider.GetRequiredService<IHostEnvironment>();
 
             return new LocalDocumentStore(Path.GetFullPath(options.RootPath, environment.ContentRootPath));
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddPythonApi(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<PythonApiOptions>()
+            .Bind(configuration.GetSection(PythonApiOptions.SectionName))
+            .Validate(o => o.TimeoutSeconds > 0, "PythonApi:TimeoutSeconds must be positive.");
+
+        services.AddHttpClient<IComparisonSummariser, PythonComparisonSummariser>((provider, client) =>
+        {
+            PythonApiOptions options = provider.GetRequiredService<IOptions<PythonApiOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+
+            if (options.IsConfigured)
+            {
+                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+            }
         });
 
         return services;

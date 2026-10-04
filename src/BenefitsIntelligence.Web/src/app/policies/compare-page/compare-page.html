@@ -1,0 +1,152 @@
+<header class="page-header">
+  <div>
+    <h1>Compare policies</h1>
+    <p class="muted">
+      See exactly what changes between two policies. Differences are calculated from the extracted
+      facts; nothing here is a recommendation.
+    </p>
+  </div>
+</header>
+
+@if (policies(); as policies) {
+  @if (policies.length < 2) {
+    <section class="empty">
+      <p>At least two processed policies are needed for a comparison.</p>
+      <a class="button" routerLink="/policies/new">Upload a policy</a>
+    </section>
+  } @else {
+    <form class="card picker" (submit)="$event.preventDefault(); compare()">
+      <div class="choice">
+        <label for="current">Current policy</label>
+        <select id="current" (change)="currentChoice.set(chosen($event))">
+          <option value="" [selected]="currentChoice() === ''" disabled>Choose a policy</option>
+          @for (policy of policies; track policy.id) {
+            <option [value]="policy.id" [selected]="policy.id === currentChoice()">
+              {{ policy.name }} · {{ policy.provider ?? 'Unknown provider' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <button type="button" class="swap" (click)="swap()" aria-label="Swap current and proposed">
+        ⇄
+      </button>
+
+      <div class="choice">
+        <label for="proposed">Proposed policy</label>
+        <select id="proposed" (change)="proposedChoice.set(chosen($event))">
+          <option value="" [selected]="proposedChoice() === ''" disabled>Choose a policy</option>
+          @for (policy of policies; track policy.id) {
+            <option [value]="policy.id" [selected]="policy.id === proposedChoice()">
+              {{ policy.name }} · {{ policy.provider ?? 'Unknown provider' }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <button type="submit" class="button" [disabled]="!canCompare()">Compare</button>
+    </form>
+  }
+}
+
+@let comparison = report();
+@if (comparison.state === 'loading') {
+  <p class="muted" aria-live="polite">Comparing policies…</p>
+} @else if (comparison.state === 'failed') {
+  <p class="alert danger" role="alert">{{ comparison.message }}</p>
+} @else if (comparison.state === 'loaded') {
+  <section class="versus">
+    <div class="side">
+      <span class="side-label">Current</span>
+      <a [routerLink]="['/policies', comparison.value.current.id]">{{
+        comparison.value.current.name
+      }}</a>
+      <span class="muted">
+        {{ comparison.value.current.provider ?? 'Unknown provider' }}
+        {{ comparison.value.current.schemeName ?? '' }}
+      </span>
+    </div>
+    <div class="side">
+      <span class="side-label">Proposed</span>
+      <a [routerLink]="['/policies', comparison.value.proposed.id]">{{
+        comparison.value.proposed.name
+      }}</a>
+      <span class="muted">
+        {{ comparison.value.proposed.provider ?? 'Unknown provider' }}
+        {{ comparison.value.proposed.schemeName ?? '' }}
+      </span>
+    </div>
+  </section>
+
+  @let written = summary();
+  <section class="summary card" aria-live="polite">
+    <h2>Summary</h2>
+    @if (written.state === 'loaded' && written.value) {
+      <p class="summary-text">{{ written.value }}</p>
+    } @else if (written.state === 'loaded' || written.state === 'failed') {
+      <p class="muted">
+        A written summary is not available right now. The comparison below is complete.
+      </p>
+    } @else {
+      <p class="muted writing">Writing a summary of the differences…</p>
+    }
+    <p class="disclaimer">
+      Written from the calculated differences below and checked to contain only their figures. It
+      describes the policies; it does not recommend either.
+    </p>
+  </section>
+
+  @if (reviewCount() > 0) {
+    <p class="alert warning" role="status">
+      {{ reviewCount() }} {{ reviewCount() === 1 ? 'difference relies' : 'differences rely' }} on
+      facts that still need review. Check the highlighted rows against each policy before relying on
+      them.
+    </p>
+  }
+
+  <label class="toggle">
+    <input
+      type="checkbox"
+      [checked]="showUnchanged()"
+      (change)="showUnchanged.set(!showUnchanged())"
+    />
+    Show fields that have not changed
+  </label>
+
+  @for (section of sections(); track section.title) {
+    @if (visibleRows(section).length > 0) {
+      <table class="comparison">
+        <caption>
+          {{
+            section.title
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Field</th>
+            <th scope="col">Current</th>
+            <th scope="col">Proposed</th>
+            <th scope="col">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of visibleRows(section); track row.field) {
+            <tr [class.needs-review]="row.needsReview" [class.unchanged]="row.unchanged">
+              <th scope="row">
+                {{ row.label }}
+                @if (row.needsReview) {
+                  <span class="review-note">Needs review</span>
+                }
+              </th>
+              <td>{{ row.current }}</td>
+              <td>{{ row.proposed }}</td>
+              <td>
+                <span class="change">{{ row.change }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+}

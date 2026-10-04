@@ -12,6 +12,11 @@ export const routes: Routes = [
     loadComponent: () => import('./policies/upload/upload').then((m) => m.Upload),
   },
   {
+    path: 'compare',
+    title: 'Compare policies',
+    loadComponent: () => import('./policies/compare-page/compare-page').then((m) => m.ComparePage),
+  },
+  {
     path: 'policies/:id',
     title: 'Policy',
     loadComponent: () => import('./policies/policy-page/policy-page').then((m) => m.PolicyPage),

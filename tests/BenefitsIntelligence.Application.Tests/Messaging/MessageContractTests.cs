@@ -1,5 +1,7 @@
 using System.Text.Json;
+using BenefitsIntelligence.Application.Comparison;
 using BenefitsIntelligence.Application.Messaging;
+using BenefitsIntelligence.Domain.Comparison;
 
 namespace BenefitsIntelligence.Application.Tests.Messaging;
 
@@ -74,12 +76,26 @@ public class MessageContractTests
         Assert.Equal("The PDF contains no extractable text.", message.ErrorMessage);
     }
 
+    [Fact]
+    public void ComparisonSummaryRequestReadsSharedFixture()
+    {
+        ComparisonSummaryRequest request = Deserialize<ComparisonSummaryRequest>("comparison_summary_request.json");
+
+        Assert.Equal("NorthStar Health", request.Proposed.Provider);
+        Assert.Equal(
+            new FieldDifference("annual_premium", ValueKind.Money, "120000.00", "108000.00", -12000m, Change.Decreased, false),
+            request.Differences.Single(d => d.Field == "annual_premium"));
+        Assert.Equal(Change.Removed, request.Differences.Single(d => d.Field == "eligibility.minimum_grade").Change);
+        Assert.True(request.Differences.Single(d => d.Field == "dependants_included").NeedsReview);
+    }
+
     // Compares property names rather than raw JSON: .NET writes UTC offsets as "+00:00" where the
     // fixture uses "Z", which both sides accept. Value fidelity is covered by the read tests above.
     [Theory]
     [InlineData("process_requested.json", typeof(ProcessPolicyRequested))]
     [InlineData("process_completed.json", typeof(ProcessPolicyCompleted))]
     [InlineData("process_failed.json", typeof(ProcessPolicyFailed))]
+    [InlineData("comparison_summary_request.json", typeof(ComparisonSummaryRequest))]
     public void SerializedPropertiesMatchSharedFixture(string fixture, Type messageType)
     {
         var json = ReadFixture(fixture);
@@ -105,16 +121,25 @@ public class MessageContractTests
 
     private static void AddPropertyNames(JsonElement element, string prefix, SortedSet<string> names)
     {
-        if (element.ValueKind != JsonValueKind.Object)
+        switch (element.ValueKind)
         {
-            return;
-        }
+            case JsonValueKind.Object:
+                foreach (JsonProperty property in element.EnumerateObject())
+                {
+                    string path = prefix + property.Name;
+                    names.Add(path);
+                    AddPropertyNames(property.Value, path + ".", names);
+                }
 
-        foreach (JsonProperty property in element.EnumerateObject())
-        {
-            string path = prefix + property.Name;
-            names.Add(path);
-            AddPropertyNames(property.Value, path + ".", names);
+                break;
+
+            case JsonValueKind.Array:
+                foreach (JsonElement item in element.EnumerateArray())
+                {
+                    AddPropertyNames(item, prefix + "[].", names);
+                }
+
+                break;
         }
     }
 }

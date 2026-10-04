@@ -5,7 +5,6 @@ from pathlib import Path
 from uuid import uuid4
 
 from aio_pika.abc import AbstractExchange, AbstractIncomingMessage
-from openai import AsyncOpenAI
 
 from app.config import Settings, load_settings
 from app.logging_config import configure_logging, log_context
@@ -19,6 +18,7 @@ from app.services.document_preparation import prepare_document
 from app.services.errors import DocumentProcessingError
 from app.services.extraction_assembler import assemble_extraction
 from app.services.llm_extractor import OpenAIPolicyExtractor, PolicyExtractor
+from app.services.openai_client import create_openai_client
 
 logger = logging.getLogger(__name__)
 
@@ -100,16 +100,7 @@ async def on_message(
 
 
 def create_extractor(settings: Settings) -> OpenAIPolicyExtractor:
-    api_key = settings.openai_api_key.get_secret_value() if settings.openai_api_key else ""
-    if not api_key.strip():
-        raise RuntimeError("OPENAI_API_KEY must be set to run the policy worker.")
-
-    client = AsyncOpenAI(
-        api_key=api_key,
-        timeout=settings.openai_timeout_seconds,
-        max_retries=3,
-    )
-    return OpenAIPolicyExtractor(client, settings.openai_model)
+    return OpenAIPolicyExtractor(create_openai_client(settings), settings.openai_model)
 
 
 async def run() -> None:

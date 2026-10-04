@@ -19,12 +19,17 @@ internal sealed class FakePolicyRepository(CallLog log) : IPolicyRepository
     /// </summary>
     public Dictionary<int, Exception> FailOnSave { get; } = [];
 
+    public List<BenefitPolicy> Existing { get; } = [];
+
     public void Add(PolicyDocument document, BenefitPolicy policy, ProcessingJob job)
     {
         Document = document;
         Policy = policy;
         Job = job;
     }
+
+    public Task<BenefitPolicy?> FindWithExtractionAsync(Guid organisationId, Guid policyId, CancellationToken cancellationToken) =>
+        Task.FromResult(Existing.SingleOrDefault(p => p.OrganisationId == organisationId && p.Id == policyId));
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {

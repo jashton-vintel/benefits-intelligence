@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 
 using BenefitsIntelligence.Api.Endpoints;
+using BenefitsIntelligence.Application.Comparison;
 using BenefitsIntelligence.Application.Policies;
 using BenefitsIntelligence.Application.Processing;
 using BenefitsIntelligence.Domain.Policies;
@@ -21,10 +22,12 @@ builder.Services.AddSingleton(new ReviewPolicy(
     builder.Configuration.GetValue("Review:ConfidenceThreshold", ReviewPolicy.DefaultConfidenceThreshold)));
 builder.Services.AddScoped<PolicyUploadService>();
 builder.Services.AddScoped<ProcessingResultHandler>();
+builder.Services.AddScoped<PolicyComparisonService>();
 
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddDocumentStorage(builder.Configuration);
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
+builder.Services.AddPythonApi(builder.Configuration);
 
 var app = builder.Build();
 
@@ -41,5 +44,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 app.MapPolicyEndpoints();
+app.MapComparisonEndpoints();
 
 app.Run();

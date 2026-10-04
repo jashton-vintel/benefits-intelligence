@@ -1,0 +1,142 @@
+{
+  "current": {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "name": "Current policy",
+    "provider": "Atlas Healthcare",
+    "scheme_name": "Corporate Plus"
+  },
+  "proposed": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "name": "Proposed policy",
+    "provider": "NorthStar Health",
+    "scheme_name": "Essentials Select"
+  },
+  "differences": [
+    {
+      "field": "provider",
+      "kind": "text",
+      "current": "Atlas Healthcare",
+      "proposed": "NorthStar Health",
+      "delta": null,
+      "change": "changed",
+      "needs_review": false
+    },
+    {
+      "field": "scheme_name",
+      "kind": "text",
+      "current": "Corporate Plus",
+      "proposed": "Essentials Select",
+      "delta": null,
+      "change": "changed",
+      "needs_review": false
+    },
+    {
+      "field": "annual_premium",
+      "kind": "money",
+      "current": "120000.00",
+      "proposed": "108000.00",
+      "delta": -12000.0,
+      "change": "decreased",
+      "needs_review": false
+    },
+    {
+      "field": "annual_excess",
+      "kind": "money",
+      "current": "100.00",
+      "proposed": "150.00",
+      "delta": 50.0,
+      "change": "increased",
+      "needs_review": false
+    },
+    {
+      "field": "effective_date",
+      "kind": "date",
+      "current": "2026-04-01",
+      "proposed": "2027-04-01",
+      "delta": null,
+      "change": "changed",
+      "needs_review": false
+    },
+    {
+      "field": "renewal_date",
+      "kind": "date",
+      "current": "2027-04-01",
+      "proposed": "2028-04-01",
+      "delta": null,
+      "change": "changed",
+      "needs_review": false
+    },
+    {
+      "field": "dependants_allowed",
+      "kind": "flag",
+      "current": "true",
+      "proposed": "true",
+      "delta": null,
+      "change": "unchanged",
+      "needs_review": false
+    },
+    {
+      "field": "dependants_included",
+      "kind": "flag",
+      "current": "true",
+      "proposed": null,
+      "delta": null,
+      "change": "unknown",
+      "needs_review": true
+    },
+    {
+      "field": "coverage.physiotherapy.covered",
+      "kind": "flag",
+      "current": "true",
+      "proposed": "true",
+      "delta": null,
+      "change": "unchanged",
+      "needs_review": false
+    },
+    {
+      "field": "coverage.physiotherapy.sessions",
+      "kind": "count",
+      "current": "8",
+      "proposed": "10",
+      "delta": 2,
+      "change": "increased",
+      "needs_review": false
+    },
+    {
+      "field": "coverage.physiotherapy.limit",
+      "kind": "text",
+      "current": "8 sessions per member per policy year, combined with osteopathy and chiropractic",
+      "proposed": "Up to 10 sessions per scheme year",
+      "delta": null,
+      "change": "changed",
+      "needs_review": false
+    },
+    {
+      "field": "coverage.mental_health.covered",
+      "kind": "flag",
+      "current": "true",
+      "proposed": "true",
+      "delta": null,
+      "change": "unchanged",
+      "needs_review": false
+    },
+    {
+      "field": "eligibility.minimum_service_months",
+      "kind": "count",
+      "current": "3",
+      "proposed": "0",
+      "delta": -3,
+      "change": "decreased",
+      "needs_review": false
+    },
+    {
+      "field": "eligibility.minimum_grade",
+      "kind": "text",
+      "current": "Grade 4",
+      "proposed": null,
+      "delta": null,
+      "change": "removed",
+      "needs_review": false
+    }
+  ]
+}

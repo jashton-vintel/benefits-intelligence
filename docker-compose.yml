@@ -48,6 +48,8 @@ services:
       RabbitMq__Password: ${RABBITMQ_PASSWORD}
       DocumentStorage__RootPath: /data
       Database__MigrateOnStartup: "true"
+      PythonApi__BaseUrl: http://ai-api:8000
+      PythonApi__ApiKey: ${INTERNAL_API_KEY:-}
     ports:
       - "8080:8080"
     volumes:
@@ -74,6 +76,20 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+
+  # Internal HTTP API for comparison summaries. Same image as the worker, different entry point.
+  # No ports are published: only services on the compose network (the API) can reach it.
+  ai-api:
+    profiles: ["app"]
+    build:
+      context: src/python
+    command: ["policy-api"]
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: "8000"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1}
 
   web:
     profiles: ["app"]

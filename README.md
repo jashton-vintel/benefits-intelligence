@@ -13,7 +13,7 @@ Policy PDFs are uploaded through an ASP.NET Core API and processed asynchronousl
 | `src/BenefitsIntelligence.Application` | .NET class library | Use cases |
 | `src/BenefitsIntelligence.Domain` | .NET class library | Domain model and deterministic rules |
 | `src/BenefitsIntelligence.Infrastructure` | .NET class library | Persistence and messaging |
-| `src/python` | Python 3.13, uv | Document parsing, LLM extraction, evidence-backed Q&A |
+| `src/python` | Python 3.13, uv, FastAPI | Document parsing and LLM extraction (queue worker); comparison summaries and Q&A (internal HTTP API) |
 | RabbitMQ | `rabbitmq:4-management` | Asynchronous document-processing pipeline |
 | SQL Server | `mssql/server:2022` | System of record |
 
@@ -36,7 +36,7 @@ Copy-Item .env.example .env
 
 ### Run everything in Docker
 
-Builds and starts the web front end, the API, the processing worker, RabbitMQ and SQL Server. The database schema is created on first start.
+Builds and starts the web front end, the API, the processing worker, the internal AI API, RabbitMQ and SQL Server. The database schema is created on first start.
 
 ```powershell
 docker compose --profile app up --build
@@ -62,19 +62,23 @@ dotnet tool restore
 dotnet user-secrets set "ConnectionStrings:BenefitsIntelligence" "Server=localhost,1433;Database=BenefitsIntelligence;User Id=sa;Password=<MSSQL_SA_PASSWORD>;TrustServerCertificate=True" --project src/BenefitsIntelligence.Api
 dotnet user-secrets set "RabbitMq:UserName" "<RABBITMQ_USER>" --project src/BenefitsIntelligence.Api
 dotnet user-secrets set "RabbitMq:Password" "<RABBITMQ_PASSWORD>" --project src/BenefitsIntelligence.Api
+dotnet user-secrets set "PythonApi:ApiKey" "<INTERNAL_API_KEY>" --project src/BenefitsIntelligence.Api
 dotnet tool run dotnet-ef database update --project src/BenefitsIntelligence.Infrastructure --startup-project src/BenefitsIntelligence.Api
 dotnet run --project src/BenefitsIntelligence.Api --launch-profile http
 ```
 
 The API listens on http://localhost:5209 (Scalar at `/scalar`). Uploaded documents are written to `data/` at the repository root.
 
-**Python worker** (reads `.env` from the repository root):
+**Python worker and internal API** (both read `.env` from the repository root; run each in its own terminal):
 
 ```powershell
 cd src/python
 uv sync
 uv run policy-worker
+uv run policy-api
 ```
+
+The internal API listens on http://127.0.0.1:8000, with interactive docs at `/docs`. It is only called by the .NET API, using the `INTERNAL_API_KEY` shared secret.
 
 **Web front end** (proxies `/api` to the API on port 5209, see `src/proxy.conf.json`):
 
@@ -123,6 +127,10 @@ The response is `202 Accepted` with the policy and correlation IDs. The policy p
 
 - **gpt-4.1 is the default model.** gpt-4.1-mini intermittently corrupted the `£` sign in structured output, changing the digits that followed it. Model text containing control characters is now rejected rather than stored.
 - **rapidfuzz** provides the tolerant quote matching.
+
+**Comparison.** Two policies are compared field by field in the .NET domain (`PolicyComparer`): amounts and counts as increases or decreases with their size, other values as changed or unchanged, and anything missing on either side as not comparable rather than guessed. Differences that rely on a fact needing review are flagged. The written summary is optional and produced by the internal Python API from the calculated differences, never from the documents. Every figure is formatted in code before the model sees it, and a summary is rejected if it uses evaluative language ("better", "recommend") or any figure not in the comparison. If no summary can be produced, the comparison is returned without one. The UI deliberately shows every change in the same neutral style, since colouring one as good and another as bad would itself be a judgement.
+
+**Queue or HTTP.** Work that takes seconds to minutes, benefits from retries and does not need an immediate answer, such as document processing, goes through RabbitMQ. Requests a user is waiting on and that are quick, such as comparison summaries, use HTTP to the internal API, with a timeout and a fallback.
 
 **Sample data.** `sample-data/policies` holds the wording of two synthetic policies, rendered to PDF by `src/python/scripts/render_sample_policies.py`. `sample-data/expected` records the known answers, the evidence for each, and deliberately planted edge cases: conflicting limits, eligibility defined across sections, an ambiguous clause and an embedded prompt-injection attempt. Tests check that every expected evidence quote can be located in the rendered documents.
 

@@ -1,8 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { PolicyDetail, PolicySummary, UploadResult } from './policy.models';
+import { ComparisonReport, PolicyDetail, PolicySummary, UploadResult } from './policy.models';
 
 @Injectable({ providedIn: 'root' })
 export class PolicyApi {
@@ -15,6 +15,11 @@ export class PolicyApi {
 
   get(id: string): Observable<PolicyDetail> {
     return this.http.get<PolicyDetail>(`${this.baseUrl}/${id}`);
+  }
+
+  compare(current: string, proposed: string, includeSummary = false): Observable<ComparisonReport> {
+    const params = new HttpParams({ fromObject: { current, proposed, includeSummary } });
+    return this.http.get<ComparisonReport>('/api/comparisons', { params });
   }
 
   upload(name: string, file: File): Observable<UploadResult> {
