@@ -1,5 +1,7 @@
 # BenefitsIntelligence
 
+[![CI](https://github.com/jashton-vintel/benefits-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/jashton-vintel/benefits-intelligence/actions/workflows/ci.yml)
+
 Turns unstructured employee-benefit policy documents into structured, validated, queryable benefit data.
 
 Policy PDFs are uploaded through an ASP.NET Core API and processed asynchronously by a Python document-intelligence worker over RabbitMQ. The worker extracts a canonical benefits model with an LLM, validates it with Pydantic and attaches verified source evidence to every fact. The .NET side owns persistence, tenancy and all deterministic business logic, such as policy comparison and what needs human review, so model output is never treated as the source of truth.
